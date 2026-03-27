@@ -1,0 +1,27 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+
+<main class="container py-4">
+  <div class="row mb-3">
+    <div class="col">
+      <h2>
+        <i class="bi bi-<%= booking ? 'pencil' : 'plus-circle' %> me-2"></i>
+        <%= booking ? t('bookings.editBooking') : t('bookings.newBooking') %>
+      </h2>
+    </div>
+    <div class="col-auto">
+      <a href="/bookings" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i><%= t('common.back') %>
+      </a>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body text-center py-5 text-muted">
+      <i class="bi bi-calendar-plus fs-1 d-block mb-2"></i>
+      <p class="mb-0"><%= t('bookings.formComingSoon') %></p>
+    </div>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>

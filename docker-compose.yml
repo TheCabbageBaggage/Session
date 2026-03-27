@@ -1,0 +1,68 @@
+services:
+  app:
+    build:
+      context: .
+      target: runtime
+    container_name: session-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://session_user:session_pass@db:5432/session_db
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-production}
+      CONFIG_ENCRYPTION_KEY: ${CONFIG_ENCRYPTION_KEY:-00000000000000000000000000000000}
+    volumes:
+      - ./config:/app/config
+      - ./logs:/app/logs
+      - uploads:/app/public/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - session-network
+
+  db:
+    image: postgres:15-alpine
+    container_name: session-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: session_db
+      POSTGRES_USER: session_user
+      POSTGRES_PASSWORD: session_pass
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U session_user -d session_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - session-network
+
+  migrate:
+    build:
+      context: .
+      target: build
+    container_name: session-migrate
+    command: sh -c "npx prisma migrate deploy && node prisma/seed.js"
+    environment:
+      DATABASE_URL: postgresql://session_user:session_pass@db:5432/session_db
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - session-network
+    profiles:
+      - migrate
+
+volumes:
+  postgres-data:
+  uploads:
+
+networks:
+  session-network:
+    driver: bridge

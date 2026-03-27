@@ -1,0 +1,13 @@
+{
+  "defaultLanguage": "en",
+  "supportedLanguages": ["en", "de"],
+  "localesDir": "locales",
+  "dateFormat": {
+    "en": "MM/DD/YYYY",
+    "de": "DD.MM.YYYY"
+  },
+  "timeFormat": {
+    "en": "h:mm A",
+    "de": "HH:mm"
+  }
+}

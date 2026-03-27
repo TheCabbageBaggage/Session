@@ -1,0 +1,25 @@
+{
+  "enabled": false,
+  "url": "ldaps://dc.example.com:636",
+  "bindDn": "CN=service-account,OU=ServiceAccounts,DC=example,DC=com",
+  "bindPassword": "ENCRYPTED:replace-with-aes256-encrypted-value",
+  "baseDn": "DC=example,DC=com",
+  "userSearchBase": "OU=Users,DC=example,DC=com",
+  "userSearchFilter": "(sAMAccountName={{username}})",
+  "tlsOptions": {
+    "rejectUnauthorized": true
+  },
+  "groups": {
+    "employees": "CN=Session-Users,OU=Groups,DC=example,DC=com",
+    "administrators": "CN=Session-Admins,OU=Groups,DC=example,DC=com"
+  },
+  "roleMapping": {
+    "employees": "Employee",
+    "administrators": "Administrator"
+  },
+  "sync": {
+    "enabled": true,
+    "cronSchedule": "0 2 * * *",
+    "batchSize": 100
+  }
+}

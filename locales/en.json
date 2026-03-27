@@ -1,0 +1,69 @@
+{
+  "nav": {
+    "bookings": "Bookings",
+    "newBooking": "New Booking",
+    "admin": "Administration",
+    "profile": "My Profile",
+    "publicView": "Public View",
+    "dashboard": "Dashboard"
+  },
+  "auth": {
+    "login": "Sign In",
+    "loginButton": "Sign In",
+    "logout": "Sign Out",
+    "username": "Username",
+    "password": "Password",
+    "invalidCredentials": "Invalid username or password.",
+    "loginHint": "Use your Active Directory credentials or local account."
+  },
+  "dashboard": {
+    "subtitle": "Welcome to Session",
+    "todayBookings": "Today's Bookings",
+    "availableRooms": "Available Rooms",
+    "myUpcoming": "My Upcoming Bookings",
+    "monthUtilisation": "This Month's Utilisation",
+    "calendarComingSoon": "Booking calendar coming in Milestone 3.",
+    "calendarM3Note": ""
+  },
+  "bookings": {
+    "calendar": "Booking Calendar",
+    "viewAll": "View All",
+    "newBooking": "New Booking",
+    "editBooking": "Edit Booking",
+    "calendarComingSoon": "Booking calendar will be available in Milestone 3.",
+    "calendarM3Note": "Core booking functionality is scheduled for Weeks 8–12.",
+    "formComingSoon": "Booking form coming in Milestone 3."
+  },
+  "admin": {
+    "dashboard": "Admin Dashboard",
+    "dashboardSubtitle": "System overview and key metrics",
+    "rooms": "Room Management",
+    "addRoom": "Add Room",
+    "users": "User Management",
+    "logs": "System Logs",
+    "exchangeSync": "Exchange Sync",
+    "logsComingSoon": "System logs coming in Milestone 2.",
+    "usersComingSoon": "User management coming in Milestone 2.",
+    "roomsComingSoon": "Room management coming in Milestone 3."
+  },
+  "profile": {
+    "comingSoon": "Profile settings coming in Milestone 2."
+  },
+  "common": {
+    "back": "Back",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "confirm": "Confirm",
+    "home": "Home",
+    "loading": "Loading…",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "errors": {
+    "unexpected": "An unexpected error occurred. Please try again.",
+    "notFound": "Page not found.",
+    "forbidden": "You do not have permission to access this page."
+  }
+}

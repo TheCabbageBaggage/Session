@@ -1,0 +1,21 @@
+{
+  "enabled": false,
+  "mode": "MSGraph",
+  "ews": {
+    "endpoint": "https://exchange.example.com/EWS/Exchange.asmx",
+    "serviceAccount": "exchange-service@example.com",
+    "password": "ENCRYPTED:replace-with-aes256-encrypted-value"
+  },
+  "msGraph": {
+    "tenantId": "your-tenant-id",
+    "clientId": "your-client-id",
+    "clientSecret": "ENCRYPTED:replace-with-aes256-encrypted-value"
+  },
+  "retryAttempts": 3,
+  "retryDelayMs": 5000,
+  "roomMailboxMapping": {
+    "NOTE": "Map room DB id (as string key) to Exchange resource mailbox address",
+    "1": "room-boardroom@example.com",
+    "2": "room-main-hall@example.com"
+  }
+}

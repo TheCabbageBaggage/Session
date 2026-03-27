@@ -1,0 +1,69 @@
+{
+  "nav": {
+    "bookings": "Buchungen",
+    "newBooking": "Neue Buchung",
+    "admin": "Administration",
+    "profile": "Mein Profil",
+    "publicView": "Öffentliche Ansicht",
+    "dashboard": "Dashboard"
+  },
+  "auth": {
+    "login": "Anmelden",
+    "loginButton": "Anmelden",
+    "logout": "Abmelden",
+    "username": "Benutzername",
+    "password": "Passwort",
+    "invalidCredentials": "Ungültiger Benutzername oder Passwort.",
+    "loginHint": "Verwenden Sie Ihre Active Directory-Anmeldedaten oder ein lokales Konto."
+  },
+  "dashboard": {
+    "subtitle": "Willkommen bei Session",
+    "todayBookings": "Heutige Buchungen",
+    "availableRooms": "Verfügbare Räume",
+    "myUpcoming": "Meine nächsten Buchungen",
+    "monthUtilisation": "Auslastung diesen Monat",
+    "calendarComingSoon": "Buchungskalender kommt in Meilenstein 3.",
+    "calendarM3Note": ""
+  },
+  "bookings": {
+    "calendar": "Buchungskalender",
+    "viewAll": "Alle anzeigen",
+    "newBooking": "Neue Buchung",
+    "editBooking": "Buchung bearbeiten",
+    "calendarComingSoon": "Buchungskalender wird in Meilenstein 3 verfügbar sein.",
+    "calendarM3Note": "Die Kernfunktionalität ist für Wochen 8–12 geplant.",
+    "formComingSoon": "Buchungsformular kommt in Meilenstein 3."
+  },
+  "admin": {
+    "dashboard": "Admin-Dashboard",
+    "dashboardSubtitle": "Systemübersicht und Kennzahlen",
+    "rooms": "Raumverwaltung",
+    "addRoom": "Raum hinzufügen",
+    "users": "Benutzerverwaltung",
+    "logs": "Systemprotokolle",
+    "exchangeSync": "Exchange-Synchronisation",
+    "logsComingSoon": "Systemprotokolle kommen in Meilenstein 2.",
+    "usersComingSoon": "Benutzerverwaltung kommt in Meilenstein 2.",
+    "roomsComingSoon": "Raumverwaltung kommt in Meilenstein 3."
+  },
+  "profile": {
+    "comingSoon": "Profileinstellungen kommen in Meilenstein 2."
+  },
+  "common": {
+    "back": "Zurück",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "confirm": "Bestätigen",
+    "home": "Startseite",
+    "loading": "Wird geladen…",
+    "yes": "Ja",
+    "no": "Nein"
+  },
+  "errors": {
+    "unexpected": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+    "notFound": "Seite nicht gefunden.",
+    "forbidden": "Sie haben keine Berechtigung, auf diese Seite zuzugreifen."
+  }
+}

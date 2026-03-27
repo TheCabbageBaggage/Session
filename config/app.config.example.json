@@ -1,0 +1,17 @@
+{
+  "appName": "Session",
+  "baseUrl": "https://session.example.com",
+  "port": 3000,
+  "defaultLanguage": "en",
+  "sessionTimeout": "8h",
+  "archiveRetentionDays": 730,
+  "publicRoomView": {
+    "enabled": true,
+    "internalOnly": true,
+    "refreshIntervalSeconds": 60
+  },
+  "logging": {
+    "level": "info",
+    "retentionDays": 30
+  }
+}

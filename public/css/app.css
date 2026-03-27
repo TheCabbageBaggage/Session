@@ -1,0 +1,45 @@
+/* Session – Room Booking System – Main Stylesheet */
+
+:root {
+  --session-primary: #0d6efd;
+  --session-sidebar-width: 240px;
+}
+
+/* Typography */
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Navbar brand */
+.navbar-brand {
+  font-size: 1.1rem;
+  letter-spacing: 0.02em;
+}
+
+/* Cards */
+.card {
+  border-radius: 0.5rem;
+}
+
+/* Footer */
+.footer {
+  margin-top: auto;
+}
+
+/* Ensure full-height layout */
+html, body {
+  height: 100%;
+}
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+body > main {
+  flex: 1;
+}
+
+/* Form helpers */
+.form-label {
+  font-weight: 500;
+}
