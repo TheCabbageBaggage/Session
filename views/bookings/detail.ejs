@@ -5,6 +5,7 @@
   <div class="row mb-3 align-items-center">
     <div class="col">
       <h2 class="mb-0">
+        <% if (booking.recurringSeriesId) { %><i class="bi bi-arrow-repeat me-1 text-primary"></i><% } %>
         <i class="bi bi-calendar2-check me-2"></i>
         <%= booking.title || (t('bookings.booking') + ' #' + booking.id) %>
       </h2>
@@ -17,7 +18,8 @@
         <a href="/bookings/<%= booking.id %>/edit" class="btn btn-outline-primary btn-sm">
           <i class="bi bi-pencil me-1"></i><%= t('common.edit') %>
         </a>
-        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
+        <button type="button" class="btn btn-sm btn-outline-danger"
+                data-bs-toggle="modal" data-bs-target="#cancelModal">
           <i class="bi bi-x-circle me-1"></i><%= t('bookings.cancel') %>
         </button>
       <% } %>
@@ -35,10 +37,32 @@
       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
   <% } %>
+  <% if (error) { %>
+    <div class="alert alert-danger alert-dismissible fade show">
+      <i class="bi bi-exclamation-triangle me-1"></i><%= error %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
 
   <% if (booking.status === 'CANCELLED') { %>
     <div class="alert alert-warning">
       <i class="bi bi-x-circle me-1"></i><%= t('bookings.cancelledNote') %>
+      <% if (booking.cancelledAt) { %>
+        &bull; <small class="text-muted"><%= new Date(booking.cancelledAt).toLocaleString('en-GB') %></small>
+      <% } %>
+    </div>
+  <% } %>
+
+  <% if (series) { %>
+    <div class="alert alert-info d-flex align-items-center">
+      <i class="bi bi-arrow-repeat me-2 fs-5"></i>
+      <div>
+        <strong><%= t('bookings.recurringBooking') %>:</strong>
+        <%= series.pattern %>
+        <% if (series.intervalValue > 1) { %> &bull; <%= t('bookings.every') %> <%= series.intervalValue %><% } %>
+        <% if (series.endDate) { %> &bull; <%= t('bookings.until') %> <%= new Date(series.endDate).toLocaleDateString('en-GB') %><% } %>
+        &bull; <%= series.bookings.filter(b => b.status === 'ACTIVE').length %> <%= t('bookings.activeOccurrences') %>
+      </div>
     </div>
   <% } %>
 
@@ -111,6 +135,9 @@
               <% } else { %>
                 <span class="badge bg-danger-subtle text-danger"><i class="bi bi-x-circle me-1"></i>Cancelled</span>
               <% } %>
+              <% if (booking.recurringSeriesId) { %>
+                <span class="badge bg-primary-subtle text-primary ms-1"><i class="bi bi-arrow-repeat me-1"></i><%= t('bookings.recurring') %></span>
+              <% } %>
             </dd>
           </dl>
         </div>
@@ -146,6 +173,41 @@
           </div>
         </div>
       <% } %>
+
+      <!-- Series overview -->
+      <% if (series && series.bookings.length > 0) { %>
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between">
+            <strong><i class="bi bi-list-ul me-1"></i><%= t('bookings.seriesOccurrences') %></strong>
+            <span class="badge bg-secondary"><%= series.bookings.length %></span>
+          </div>
+          <div class="card-body p-0">
+            <div style="max-height:280px;overflow-y:auto;">
+              <table class="table table-sm table-hover mb-0">
+                <tbody>
+                  <% series.bookings.forEach(b => { %>
+                    <tr class="<%= b.status === 'CANCELLED' ? 'text-muted' : '' %> <%= b.id === booking.id ? 'table-primary' : '' %>">
+                      <td class="ps-3">
+                        <% if (b.id === booking.id) { %><i class="bi bi-caret-right-fill text-primary me-1"></i><% } %>
+                        <%= new Date(b.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) %>
+                      </td>
+                      <td><%= b.status === 'CANCELLED' ? '<s>' + b.room?.name + '</s>' : (b.room?.name || '') %></td>
+                      <td class="text-end pe-3">
+                        <% if (b.status === 'CANCELLED') { %>
+                          <span class="badge bg-danger-subtle text-danger small">Cancelled</span>
+                        <% } else { %>
+                          <a href="/bookings/<%= b.id %>" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-1" style="font-size:.7rem;">View</a>
+                        <% } %>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      <% } %>
+
     </div>
 
     <!-- Actions sidebar -->
@@ -175,9 +237,12 @@
         </div>
         <div class="card-body small text-muted">
           <div><strong>ID:</strong> #<%= booking.id %></div>
+          <% if (series) { %>
+            <div><strong><%= t('bookings.seriesId') %>:</strong> #<%= series.id %></div>
+          <% } %>
           <div><strong><%= t('bookings.created') %>:</strong>
             <%= new Date(booking.createdAt).toLocaleString('en-GB') %></div>
-          <% if (booking.updatedAt && booking.updatedAt !== booking.createdAt) { %>
+          <% if (booking.updatedAt > booking.createdAt) { %>
             <div><strong><%= t('bookings.updated') %>:</strong>
               <%= new Date(booking.updatedAt).toLocaleString('en-GB') %></div>
           <% } %>
@@ -191,7 +256,7 @@
   </div>
 </main>
 
-<!-- Cancel modal -->
+<!-- Cancel modal (with series scope selector) -->
 <div class="modal fade" id="cancelModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -201,13 +266,41 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <p><%= t('bookings.confirmCancelBody') %></p>
-          <% if (booking.room) { %>
-            <div class="alert alert-light mb-0">
-              <strong><%= booking.room.name %></strong><br>
-              <%= new Date(booking.date).toLocaleDateString('en-GB') %>
-              &bull; <%= booking.startTime %> – <%= booking.endTime %>
+          <% if (series && booking.status === 'ACTIVE') { %>
+            <p class="fw-semibold"><%= t('bookings.seriesCancelScope') %>:</p>
+            <div class="d-grid gap-2">
+              <div class="form-check border rounded p-3">
+                <input class="form-check-input" type="radio" name="cancelScope" id="cancelSingle" value="single" checked>
+                <label class="form-check-label" for="cancelSingle">
+                  <strong><%= t('bookings.cancelScopeThis') %></strong>
+                  <small class="text-muted d-block"><%= new Date(booking.date).toLocaleDateString('en-GB') %></small>
+                </label>
+              </div>
+              <div class="form-check border rounded p-3">
+                <input class="form-check-input" type="radio" name="cancelScope" id="cancelFuture" value="future">
+                <label class="form-check-label" for="cancelFuture">
+                  <strong><%= t('bookings.cancelScopeFuture') %></strong>
+                  <small class="text-muted d-block"><%= t('bookings.cancelScopeFutureHint') %></small>
+                </label>
+              </div>
+              <div class="form-check border rounded p-3">
+                <input class="form-check-input" type="radio" name="cancelScope" id="cancelAll" value="all">
+                <label class="form-check-label" for="cancelAll">
+                  <strong class="text-danger"><%= t('bookings.cancelScopeAll') %></strong>
+                  <small class="text-muted d-block"><%= series.bookings.filter(b => b.status === 'ACTIVE').length %> <%= t('bookings.occurrences') %></small>
+                </label>
+              </div>
             </div>
+          <% } else { %>
+            <input type="hidden" name="cancelScope" value="single">
+            <p><%= t('bookings.confirmCancelBody') %></p>
+            <% if (booking.room) { %>
+              <div class="alert alert-light mb-0">
+                <strong><%= booking.room.name %></strong><br>
+                <%= new Date(booking.date).toLocaleDateString('en-GB') %>
+                &bull; <%= booking.startTime %> – <%= booking.endTime %>
+              </div>
+            <% } %>
           <% } %>
         </div>
         <div class="modal-footer">

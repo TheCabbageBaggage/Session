@@ -528,4 +528,103 @@ router.post('/seating-layouts/:id/delete', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ---------------------------------------------------------------------------
+// Settings – SMTP configuration
+// ---------------------------------------------------------------------------
+
+const CONFIG_DIR = path.join(__dirname, '../../../config');
+const crypto = require('crypto');
+
+function encryptPassword(plaintext) {
+  if (!plaintext) return '';
+  const key = process.env.CONFIG_ENCRYPTION_KEY || '0'.repeat(32);
+  const keyBuf = Buffer.from(key.padEnd(32).slice(0, 32), 'utf8');
+  const iv  = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-cbc', keyBuf, iv);
+  const enc = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+  return 'ENCRYPTED:' + Buffer.concat([iv, enc]).toString('hex');
+}
+
+router.get('/settings', async (req, res, next) => {
+  try {
+    const config = require('../../config');
+    const smtp = config.smtp();
+    res.render('admin/settings', {
+      title: req.t('admin.settings'),
+      tab: req.query.tab || 'smtp',
+      smtp,
+      success: req.query.success || null,
+      error: req.query.error || null,
+    });
+  } catch (err) { next(err); }
+});
+
+router.post('/settings/smtp', async (req, res, next) => {
+  try {
+    const {
+      host, port, secure, tlsRejectUnauthorized,
+      authUser, authPassword, fromName, fromAddress, replyTo,
+    } = req.body;
+
+    if (!host) return res.redirect('/admin/settings?tab=smtp&error=SMTP+host+is+required');
+
+    // Load existing config to preserve encrypted password if not changed
+    const config = require('../../config');
+    const existing = config.smtp();
+    const existingPassword = (existing.auth && existing.auth.password) || '';
+
+    const newPassword = authPassword
+      ? encryptPassword(authPassword)
+      : existingPassword;
+
+    const smtpConfig = {
+      host,
+      port: Number(port) || 587,
+      secure: secure === 'true',
+      tls: { rejectUnauthorized: tlsRejectUnauthorized === 'true' },
+      auth: authUser ? { user: authUser, password: newPassword } : undefined,
+      from: { name: fromName || 'Session Room Booking', address: fromAddress || '' },
+      replyTo: replyTo || undefined,
+    };
+
+    fs.writeFileSync(
+      path.join(CONFIG_DIR, 'smtp.config.json'),
+      JSON.stringify(smtpConfig, null, 2),
+      'utf8'
+    );
+
+    // Invalidate cached config so next use picks up new values
+    config.reload();
+
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user.id,
+        action: 'CONFIG_CHANGED',
+        entityType: 'smtp',
+        ipAddress: req.ip,
+        details: JSON.stringify({ changed: 'smtp.config.json' }),
+      },
+    });
+
+    logger.info('SMTP config updated', { adminId: req.user.id });
+    res.redirect('/admin/settings?tab=smtp&success=SMTP+configuration+saved');
+  } catch (err) { next(err); }
+});
+
+router.post('/settings/smtp/test', async (req, res, next) => {
+  try {
+    const { testTo } = req.body;
+    if (!testTo) return res.redirect('/admin/settings?tab=smtp&error=Recipient+email+is+required');
+
+    const emailService = require('../../services/emailService');
+    await emailService.sendTestEmail(testTo);
+
+    logger.info('Test email sent', { adminId: req.user.id, to: testTo });
+    res.redirect(`/admin/settings?tab=smtp&success=Test+email+sent+to+${encodeURIComponent(testTo)}`);
+  } catch (err) {
+    logger.error('Test email failed', { error: err.message });
+    res.redirect(`/admin/settings?tab=smtp&error=${encodeURIComponent('Test email failed: ' + err.message)}`);
+  }
+});
+
 module.exports = router;

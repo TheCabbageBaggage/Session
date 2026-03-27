@@ -87,21 +87,21 @@
 
 **Goal:** Recurring series logic, email notifications, iCal generation.
 
-- [ ] Implement recurring series: daily (every N days), weekly (selected days, every N weeks), monthly (same day or weekday)
-- [ ] Series end by date or occurrence count
-- [ ] Conflict checking across all occurrences before saving series
-- [ ] Edit single occurrence within a series
-- [ ] Delete single occurrence within a series
-- [ ] Edit entire series with confirmation prompt
-- [ ] Delete entire series with confirmation prompt
-- [ ] SMTP integration and email send service
-- [ ] iCal generation (RFC 5545) – `METHOD:REQUEST` for new/updated bookings
-- [ ] iCal generation (RFC 5545) – `METHOD:CANCEL` for cancelled bookings
-- [ ] Email templates in English and German
-- [ ] Email language matches booking creator's language preference
-- [ ] SMTP configuration in admin backend
-- [ ] Email log in admin backend (recipient, status, timestamp)
-- [ ] Integration testing with Outlook, Thunderbird, and Apple Calendar
+- [x] Implement recurring series: daily (every N days), weekly (selected days, every N weeks), monthly (same day or weekday)
+- [x] Series end by date or occurrence count
+- [x] Conflict checking across all occurrences before saving series
+- [x] Edit single occurrence within a series (detaches from series)
+- [x] Delete single occurrence within a series
+- [x] Edit entire series / from this occurrence onward (confirmation prompt via edit-scope selector)
+- [x] Delete entire series / from this occurrence onward (confirmation prompt in cancel modal)
+- [x] SMTP integration and email send service (Nodemailer)
+- [x] iCal generation (RFC 5545) – `METHOD:REQUEST` for new/updated bookings
+- [x] iCal generation (RFC 5545) – `METHOD:CANCEL` for cancelled bookings
+- [x] Email templates in English and German (inline HTML, language-aware)
+- [x] Email language matches booking creator's language preference
+- [x] SMTP configuration in admin backend (`/admin/settings`, AES-256 password storage)
+- [x] Email log in admin backend (recipient, status, timestamp – existing logs page)
+- [ ] Integration testing with Outlook, Thunderbird, and Apple Calendar (manual QA)
 
 **Deliverable:** Complete notification system with iCal invitations in both languages.
 

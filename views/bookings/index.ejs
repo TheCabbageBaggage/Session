@@ -184,6 +184,7 @@
                   <strong class="d-block"><%= b.startTime %>–<%= b.endTime %></strong>
                   <% if (b.room) { %><span><%= b.room.name %></span><% } %>
                   <% if (b.title) { %><span class="d-block text-truncate"><%= b.title %></span><% } %>
+                  <% if (b.recurringSeriesId) { %><i class="bi bi-arrow-repeat" title="Recurring"></i><% } %>
                 </a>
               <% }) %>
               <!-- Today now-line (positioned via JS) -->

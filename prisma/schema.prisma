@@ -203,6 +203,8 @@ model Booking {
   status           BookingStatus    @default(ACTIVE)
   recurringSeriesId Int?
   notes            String?
+  cancelledAt      DateTime?
+  cancelledBy      Int?             // userId who cancelled
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
@@ -354,6 +356,7 @@ model AdSyncLog {
   id             Int      @id @default(autoincrement())
   startedAt      DateTime @default(now())
   completedAt    DateTime?
+  triggeredBy    String?  // "SCHEDULED" | "MANUAL"
   usersAdded     Int      @default(0)
   usersUpdated   Int      @default(0)
   usersDeactivated Int    @default(0)
