@@ -38,6 +38,11 @@
         <i class="bi bi-envelope me-1"></i><%= t('admin.emailLog') %>
       </a>
     </li>
+    <li class="nav-item">
+      <a class="nav-link <%= tab === 'exchange' ? 'active' : '' %>" href="/admin/logs/exchange">
+        <i class="bi bi-cloud-arrow-up me-1"></i><%= t('admin.exchangeSyncLog') %>
+      </a>
+    </li>
   </ul>
 
   <div class="card border-0 shadow-sm">
@@ -164,6 +169,84 @@
                     <span class="badge <%= log.status === 'SENT' ? 'bg-success' : log.status === 'QUEUED' ? 'bg-warning text-dark' : 'bg-danger' %>">
                       <%= log.status %>
                     </span>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } else if (tab === 'exchange') { %>
+        <!-- Exchange sync log table -->
+        <div class="d-flex justify-content-between align-items-center px-3 pt-3 pb-2 flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small"><%= total %> <%= t('admin.entries') %></span>
+            <% if (typeof exchangeEnabled !== 'undefined' && !exchangeEnabled) { %>
+              <span class="badge bg-secondary">Exchange integration disabled</span>
+            <% } %>
+          </div>
+          <div class="d-flex gap-2">
+            <form action="/admin/exchange/retry-all" method="POST" class="d-inline">
+              <button type="submit" class="btn btn-outline-warning btn-sm">
+                <i class="bi bi-arrow-repeat me-1"></i><%= t('admin.retryAllFailed') %>
+              </button>
+            </form>
+          </div>
+        </div>
+        <!-- Status filter -->
+        <div class="px-3 pb-2">
+          <div class="btn-group btn-group-sm">
+            <a href="/admin/logs/exchange" class="btn <%= !filterStatus ? 'btn-secondary' : 'btn-outline-secondary' %>">All</a>
+            <a href="/admin/logs/exchange?status=FAILED" class="btn <%= filterStatus === 'FAILED' ? 'btn-danger' : 'btn-outline-secondary' %>">Failed</a>
+            <a href="/admin/logs/exchange?status=SUCCESS" class="btn <%= filterStatus === 'SUCCESS' ? 'btn-success' : 'btn-outline-secondary' %>">Success</a>
+            <a href="/admin/logs/exchange?status=PENDING" class="btn <%= filterStatus === 'PENDING' ? 'btn-primary' : 'btn-outline-secondary' %>">Pending</a>
+            <a href="/admin/logs/exchange?status=RETRY" class="btn <%= filterStatus === 'RETRY' ? 'btn-warning' : 'btn-outline-secondary' %>">Retry</a>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th><%= t('admin.timestamp') %></th>
+                <th><%= t('admin.bookingId') %></th>
+                <th>Room</th>
+                <th><%= t('admin.operation') %></th>
+                <th><%= t('admin.status') %></th>
+                <th>Attempts</th>
+                <th><%= t('admin.error') %></th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (logs.length === 0) { %>
+                <tr><td colspan="8" class="text-center text-muted py-4"><%= t('admin.noLogs') %></td></tr>
+              <% } %>
+              <% logs.forEach(log => { %>
+                <tr>
+                  <td class="small text-nowrap"><%= log.createdAt.toLocaleString() %></td>
+                  <td class="small">
+                    <% if (log.booking) { %>
+                      <a href="/bookings/<%= log.bookingId %>">#<%= log.bookingId %></a>
+                    <% } else { %>#<%= log.bookingId %><% } %>
+                  </td>
+                  <td class="small text-muted"><%= log.booking && log.booking.room ? log.booking.room.name : '–' %></td>
+                  <td><span class="badge bg-light text-dark border"><%= log.operation %></span></td>
+                  <td>
+                    <span class="badge <%= log.status === 'SUCCESS' ? 'bg-success' : log.status === 'FAILED' ? 'bg-danger' : log.status === 'RETRY' ? 'bg-warning text-dark' : 'bg-secondary' %>">
+                      <%= log.status %>
+                    </span>
+                  </td>
+                  <td class="text-center small"><%= log.attempts %></td>
+                  <td class="small text-danger text-truncate" style="max-width:220px" title="<%= log.errorMessage || '' %>">
+                    <%= log.errorMessage || '' %>
+                  </td>
+                  <td>
+                    <% if (log.status === 'FAILED') { %>
+                      <form action="/admin/exchange/retry/<%= log.id %>" method="POST" class="d-inline">
+                        <button type="submit" class="btn btn-xs btn-outline-warning py-0 px-1" style="font-size:.7rem">
+                          <i class="bi bi-arrow-repeat"></i> Retry
+                        </button>
+                      </form>
+                    <% } %>
                   </td>
                 </tr>
               <% }) %>

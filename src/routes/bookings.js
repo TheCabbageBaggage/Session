@@ -8,6 +8,7 @@ const bookingService = require('../services/bookingService');
 const recurringService = require('../services/recurringService');
 const roomService = require('../services/roomService');
 const emailService = require('../services/emailService');
+const exchangeService = require('../services/exchangeService');
 const prisma = require('../db/prisma');
 const logger = require('../logger');
 
@@ -190,6 +191,7 @@ router.post(
       // Send invitation email (non-blocking)
       const fullBooking = await bookingService.getBookingById(booking.id);
       emailService.sendBookingEmail(fullBooking, 'INVITATION', { language: lang }).catch(e => logger.error('Email error', e));
+      exchangeService.syncBooking(booking.id, 'CREATE').catch(e => logger.error('Exchange sync error', e));
 
       res.redirect(`/bookings/${booking.id}?success=created`);
     } catch (err) {
@@ -326,6 +328,7 @@ router.post(
 
       const updated = await bookingService.getBookingById(req.params.id);
       emailService.sendBookingEmail(updated, 'UPDATE', { language: lang, sequence: 1 }).catch(e => logger.error('Email error', e));
+      exchangeService.syncBooking(req.params.id, 'UPDATE').catch(e => logger.error('Exchange sync error', e));
       res.redirect(`/bookings/${req.params.id}?success=updated`);
     } catch (err) {
       if (err.status === 400 || err.status === 403) return res.redirect(`/bookings/${req.params.id}/edit?error=${encodeURIComponent(err.message)}`);
@@ -359,6 +362,7 @@ router.post('/:id/cancel', async (req, res, next) => {
 
     await bookingService.cancelBooking(req.params.id, req.user.id, admin);
     emailService.sendBookingEmail(booking, 'CANCELLATION', { language: lang, sequence: 2 }).catch(e => logger.error('Email error', e));
+    exchangeService.syncBooking(req.params.id, 'CANCEL').catch(e => logger.error('Exchange sync error', e));
     res.redirect(`/bookings/${req.params.id}?success=cancelled`);
   } catch (err) {
     if (err.status === 400 || err.status === 403) return res.redirect(`/bookings/${req.params.id}?error=${encodeURIComponent(err.message)}`);
@@ -376,6 +380,7 @@ router.post('/:id/copy', async (req, res, next) => {
     const lang = await getUserLanguage(req.user.id);
     const fullBooking = await bookingService.getBookingById(newBooking.id);
     emailService.sendBookingEmail(fullBooking, 'INVITATION', { language: lang }).catch(e => logger.error('Email error', e));
+    exchangeService.syncBooking(newBooking.id, 'CREATE').catch(e => logger.error('Exchange sync error', e));
     res.redirect(`/bookings/${newBooking.id}?success=copied`);
   } catch (err) {
     if (err.status === 400 || err.status === 404) return res.redirect(`/bookings/${req.params.id}?error=${encodeURIComponent(err.message)}`);

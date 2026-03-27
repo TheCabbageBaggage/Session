@@ -1,0 +1,301 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+
+<main class="container-fluid py-4">
+  <div class="d-flex align-items-center mb-4 gap-2 flex-wrap">
+    <h2 class="mb-0 me-auto"><i class="bi bi-bar-chart-line me-2"></i><%= t('admin.reports') %></h2>
+  </div>
+
+  <!-- Report tabs -->
+  <ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+      <a class="nav-link <%= reportType === 'cost-centre' ? 'active' : '' %>" href="/admin/reports/cost-centre?start=<%= start %>&end=<%= end %>">
+        <i class="bi bi-cash-coin me-1"></i><%= t('admin.reportCostCentre') %>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link <%= reportType === 'rooms' ? 'active' : '' %>" href="/admin/reports/rooms?start=<%= start %>&end=<%= end %>">
+        <i class="bi bi-door-open me-1"></i><%= t('admin.reportRooms') %>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link <%= reportType === 'utilisation' ? 'active' : '' %>" href="/admin/reports/utilisation?start=<%= start %>&end=<%= end %>">
+        <i class="bi bi-pie-chart me-1"></i><%= t('admin.reportUtilisation') %>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link <%= reportType === 'catering' ? 'active' : '' %>" href="/admin/reports/catering?start=<%= start %>&end=<%= end %>">
+        <i class="bi bi-cup-hot me-1"></i><%= t('admin.reportCatering') %>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link <%= reportType === 'company' ? 'active' : '' %>" href="/admin/reports/company?start=<%= start %>&end=<%= end %>">
+        <i class="bi bi-building me-1"></i><%= t('admin.reportCompany') %>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link <%= reportType === 'cancelled' ? 'active' : '' %>" href="/admin/reports/cancelled?start=<%= start %>&end=<%= end %>">
+        <i class="bi bi-x-circle me-1"></i><%= t('admin.reportCancelled') %>
+      </a>
+    </li>
+  </ul>
+
+  <!-- Date range filter -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <form method="GET" class="row g-2 align-items-end">
+        <div class="col-auto">
+          <label class="form-label small text-muted mb-1"><%= t('admin.reportFrom') %></label>
+          <input type="date" name="start" value="<%= start %>" class="form-control form-control-sm">
+        </div>
+        <div class="col-auto">
+          <label class="form-label small text-muted mb-1"><%= t('admin.reportTo') %></label>
+          <input type="date" name="end" value="<%= end %>" class="form-control form-control-sm">
+        </div>
+        <div class="col-auto d-flex gap-2">
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-funnel me-1"></i><%= t('common.filter') %>
+          </button>
+          <a href="/admin/reports/export/csv?type=<%= reportType %>&start=<%= start %>&end=<%= end %>" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-download me-1"></i>CSV
+          </a>
+          <a href="/admin/reports/<%= reportType %>?start=<%= start %>&end=<%= end %>" onclick="window.print();return false;" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-printer me-1"></i>PDF
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- ---------------------------------------------------------------- -->
+    <!-- Chart column                                                       -->
+    <!-- ---------------------------------------------------------------- -->
+    <% if (reportType !== 'utilisation' && reportType !== 'cancelled') { %>
+    <div class="col-xl-5">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0">
+            <% if (reportType === 'cost-centre') { %><%= t('admin.reportCostCentre') %>
+            <% } else if (reportType === 'rooms') { %><%= t('admin.reportRooms') %>
+            <% } else if (reportType === 'catering') { %><%= t('admin.reportCatering') %>
+            <% } else if (reportType === 'company') { %><%= t('admin.reportCompany') %>
+            <% } %>
+          </h6>
+        </div>
+        <div class="card-body">
+          <canvas id="reportChart" height="280"></canvas>
+        </div>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- ---------------------------------------------------------------- -->
+    <!-- Table column                                                       -->
+    <!-- ---------------------------------------------------------------- -->
+    <div class="col-xl-<%= reportType !== 'utilisation' && reportType !== 'cancelled' ? '7' : '12' %>">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+          <h6 class="mb-0"><%= t('admin.reportData') %></h6>
+          <span class="badge bg-light text-dark border"><%= data.length %> <%= t('admin.entries') %></span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+
+            <% if (reportType === 'cost-centre') { %>
+              <thead class="table-light">
+                <tr>
+                  <th><%= t('admin.reportCostCentreCol') %></th>
+                  <th class="text-end"><%= t('admin.reportBookingCount') %></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (data.length === 0) { %><tr><td colspan="2" class="text-center text-muted py-4"><%= t('admin.noData') %></td></tr><% } %>
+                <% data.forEach(r => { %>
+                  <tr>
+                    <td><%= r.costCentre %></td>
+                    <td class="text-end fw-semibold"><%= r.count %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+
+            <% } else if (reportType === 'rooms') { %>
+              <thead class="table-light">
+                <tr>
+                  <th><%= t('admin.roomName') %></th>
+                  <th class="text-end"><%= t('admin.reportBookingCount') %></th>
+                  <th class="text-end"><%= t('admin.reportTotalHours') %></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (data.length === 0) { %><tr><td colspan="3" class="text-center text-muted py-4"><%= t('admin.noData') %></td></tr><% } %>
+                <% data.forEach(r => { %>
+                  <tr>
+                    <td><%= r.roomName %></td>
+                    <td class="text-end fw-semibold"><%= r.count %></td>
+                    <td class="text-end text-muted"><%= (r.totalMinutes / 60).toFixed(1) %>h</td>
+                  </tr>
+                <% }) %>
+              </tbody>
+
+            <% } else if (reportType === 'utilisation') { %>
+              <thead class="table-light">
+                <tr>
+                  <th><%= t('admin.roomName') %></th>
+                  <th><%= t('admin.location') %></th>
+                  <th class="text-end"><%= t('admin.capacity') %></th>
+                  <th><%= t('admin.reportUtilisationPct') %></th>
+                  <th class="text-end"><%= t('admin.reportBookedHours') %></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (data.length === 0) { %><tr><td colspan="5" class="text-center text-muted py-4"><%= t('admin.noData') %></td></tr><% } %>
+                <% data.forEach(r => { %>
+                  <tr>
+                    <td><%= r.roomName %></td>
+                    <td class="text-muted small"><%= r.location || '–' %></td>
+                    <td class="text-end"><%= r.capacity %></td>
+                    <td style="min-width:140px">
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="progress flex-grow-1" style="height:8px;">
+                          <div class="progress-bar
+                            <%= r.utilisationPct >= 75 ? 'bg-danger' : r.utilisationPct >= 40 ? 'bg-warning' : 'bg-success' %>"
+                            style="width:<%= r.utilisationPct %>%">
+                          </div>
+                        </div>
+                        <span class="small fw-semibold" style="min-width:38px"><%= r.utilisationPct %>%</span>
+                      </div>
+                    </td>
+                    <td class="text-end text-muted small"><%= (r.totalMinutes / 60).toFixed(1) %>h</td>
+                  </tr>
+                <% }) %>
+              </tbody>
+
+            <% } else if (reportType === 'catering') { %>
+              <thead class="table-light">
+                <tr>
+                  <th><%= t('admin.reportCateringOption') %></th>
+                  <th class="text-end"><%= t('admin.reportQuantity') %></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (data.length === 0) { %><tr><td colspan="2" class="text-center text-muted py-4"><%= t('admin.noData') %></td></tr><% } %>
+                <% data.forEach(r => { %>
+                  <tr>
+                    <td><%= r.option.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) %></td>
+                    <td class="text-end fw-semibold"><%= r.quantity %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+
+            <% } else if (reportType === 'company') { %>
+              <thead class="table-light">
+                <tr>
+                  <th><%= t('admin.companyName') %></th>
+                  <th class="text-end"><%= t('admin.reportBookingCount') %></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (data.length === 0) { %><tr><td colspan="2" class="text-center text-muted py-4"><%= t('admin.noData') %></td></tr><% } %>
+                <% data.forEach(r => { %>
+                  <tr>
+                    <td><%= r.company %></td>
+                    <td class="text-end fw-semibold"><%= r.count %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+
+            <% } else if (reportType === 'cancelled') { %>
+              <thead class="table-light">
+                <tr>
+                  <th><%= t('bookings.date') %></th>
+                  <th><%= t('bookings.room') %></th>
+                  <th><%= t('admin.user') %></th>
+                  <th><%= t('admin.reportTitle') %></th>
+                  <th><%= t('bookings.time') %></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (data.length === 0) { %><tr><td colspan="5" class="text-center text-muted py-4"><%= t('admin.noData') %></td></tr><% } %>
+                <% data.forEach(r => { %>
+                  <tr>
+                    <td class="text-nowrap small"><%= r.date.toLocaleDateString('en-GB') %></td>
+                    <td class="small"><%= r.room ? r.room.name : '–' %></td>
+                    <td class="small"><%= r.user ? r.user.firstName + ' ' + r.user.lastName : '–' %></td>
+                    <td class="small text-muted text-truncate" style="max-width:200px"><%= r.title || '–' %></td>
+                    <td class="small text-nowrap text-muted"><%= r.startTime %>–<%= r.endTime %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            <% } %>
+
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<% if (reportType !== 'utilisation' && reportType !== 'cancelled' && data.length > 0) { %>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  <%
+    let labels, counts;
+    if (reportType === 'cost-centre') {
+      labels = data.map(r => r.costCentre);
+      counts = data.map(r => r.count);
+    } else if (reportType === 'rooms') {
+      labels = data.map(r => r.roomName);
+      counts = data.map(r => r.count);
+    } else if (reportType === 'catering') {
+      labels = data.map(r => r.option.replace(/_/g, ' '));
+      counts = data.map(r => r.quantity);
+    } else if (reportType === 'company') {
+      labels = data.map(r => r.company);
+      counts = data.map(r => r.count);
+    } else {
+      labels = []; counts = [];
+    }
+    const isBar = ['cost-centre', 'rooms', 'company'].includes(reportType);
+  %>
+  const ctx    = document.getElementById('reportChart').getContext('2d');
+  const labels = <%- JSON.stringify(labels) %>;
+  const counts = <%- JSON.stringify(counts) %>;
+  const COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16'];
+
+  new Chart(ctx, {
+    type: '<%= isBar ? "bar" : "doughnut" %>',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Bookings',
+        data:  counts,
+        backgroundColor: labels.map((_, i) => COLORS[i % COLORS.length]),
+        borderWidth: 1,
+        borderColor: '#fff',
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: <%- isBar ? 'false' : 'true' %> },
+      },
+      <% if (isBar) { %>
+      scales: {
+        y: { beginAtZero: true, ticks: { precision: 0 } },
+      },
+      <% } %>
+    },
+  });
+</script>
+<% } %>
+
+<style>
+@media print {
+  nav, .btn, form, .nav-tabs { display: none !important; }
+  .card { border: 1px solid #ccc !important; box-shadow: none !important; }
+}
+</style>
+
+<%- include('../partials/footer') %>

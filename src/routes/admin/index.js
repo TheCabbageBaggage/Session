@@ -10,6 +10,8 @@ const { requireAuth, requireAdmin } = require('../../middleware/auth');
 const userService = require('../../services/userService');
 const roomService = require('../../services/roomService');
 const adSync = require('../../services/adSync');
+const reportService = require('../../services/reportService');
+const exchangeService = require('../../services/exchangeService');
 const prisma = require('../../db/prisma');
 const logger = require('../../logger');
 
@@ -46,12 +48,13 @@ router.get('/', async (req, res, next) => {
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
 
-    const [totalUsers, totalRooms, todayBookings, defaultPwdCount, recentSync] = await Promise.all([
+    const [totalUsers, totalRooms, todayBookings, defaultPwdCount, recentSync, dashKpis] = await Promise.all([
       prisma.user.count({ where: { isActive: true } }),
       prisma.room.count({ where: { isActive: true } }),
       prisma.booking.count({ where: { date: today, status: 'ACTIVE' } }),
       userService.countDefaultPasswordAccounts(),
       prisma.adSyncLog.findFirst({ orderBy: { startedAt: 'desc' } }),
+      reportService.getDashboardKpis(),
     ]);
 
     res.render('admin/dashboard', {
@@ -61,6 +64,7 @@ router.get('/', async (req, res, next) => {
       todayBookings,
       defaultPwdCount,
       recentSync,
+      dashKpis,
     });
   } catch (err) { next(err); }
 });
@@ -321,6 +325,64 @@ router.get('/logs/email', async (req, res, next) => {
       pageSize,
       totalPages: Math.ceil(total / pageSize),
     });
+  } catch (err) { next(err); }
+});
+
+router.get('/logs/exchange', async (req, res, next) => {
+  try {
+    const { page = 1, status = '' } = req.query;
+    const pageSize = 50;
+    const where = status ? { status } : {};
+    const [logs, total] = await Promise.all([
+      prisma.exchangeSyncLog.findMany({
+        where,
+        include: { booking: { select: { id: true, title: true, date: true, room: { select: { name: true } } } } },
+        orderBy: { createdAt: 'desc' },
+        skip: (Number(page) - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.exchangeSyncLog.count({ where }),
+    ]);
+    res.render('admin/logs', {
+      title:      req.t('admin.logs'),
+      tab:        'exchange',
+      logs,
+      total,
+      page:       Number(page),
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+      filterStatus: status,
+      exchangeEnabled: exchangeService.isEnabled(),
+      notice: req.query.notice || null,
+      error:  req.query.error  || null,
+    });
+  } catch (err) { next(err); }
+});
+
+// Exchange sync – manual retry for a single log entry
+router.post('/exchange/retry/:id', async (req, res, next) => {
+  try {
+    const log = await prisma.exchangeSyncLog.findUnique({ where: { id: Number(req.params.id) } });
+    if (!log) return res.redirect('/admin/logs/exchange?error=Log+entry+not+found');
+    await prisma.exchangeSyncLog.update({
+      where: { id: log.id },
+      data:  { status: 'RETRY', attempts: { increment: 1 }, lastAttempt: new Date() },
+    });
+    await exchangeService.syncBooking(log.bookingId, log.operation);
+    logger.info('Manual exchange retry succeeded', { adminId: req.user.id, logId: log.id });
+    res.redirect('/admin/logs/exchange?notice=Retry+succeeded');
+  } catch (err) {
+    logger.error('Manual exchange retry failed', { error: err.message });
+    res.redirect(`/admin/logs/exchange?error=${encodeURIComponent('Retry failed: ' + err.message)}`);
+  }
+});
+
+// Exchange sync – retry all failed entries
+router.post('/exchange/retry-all', async (req, res, next) => {
+  try {
+    const result = await exchangeService.retryFailed();
+    logger.info('Retry-all exchange sync', { adminId: req.user.id, retried: result.retried });
+    res.redirect(`/admin/logs/exchange?notice=Retried+${result.retried}+operations`);
   } catch (err) { next(err); }
 });
 

@@ -1,0 +1,14 @@
+{
+  "_comment": "Exchange/Graph sync config. Set mode to null to disable. Copy to exchange.config.json.",
+  "mode": null,
+  "graph": {
+    "tenantId": "",
+    "clientId": "",
+    "clientSecret": ""
+  },
+  "ews": {
+    "url": "https://mail.example.com/EWS/Exchange.asmx",
+    "username": "service@example.com",
+    "password": ""
+  }
+}

@@ -111,24 +111,24 @@
 
 **Goal:** Optional Exchange integration, full reporting module, and admin dashboard.
 
-- [ ] Exchange EWS integration (create, update, cancel calendar items in resource mailboxes)
-- [ ] Microsoft Graph API integration (primary alternative to EWS)
-- [ ] Room-to-resource-mailbox mapping configuration in admin UI
-- [ ] Exchange sync log in admin backend (per-booking status, error messages, retry history)
-- [ ] Retry mechanism for failed Exchange sync operations
-- [ ] Report: bookings per cost centre (month, year, custom range)
-- [ ] Report: bookings per room (month, year, custom range)
-- [ ] Report: catering quantities (beverages, pastries, bread rolls) by room / cost centre
-- [ ] Report: room utilisation rate by room
-- [ ] Report: bookings per company
-- [ ] Report: cancelled bookings by room / cost centre
-- [ ] PDF report export (server-side generation with charts and formatted tables)
-- [ ] CSV raw data export
-- [ ] Admin dashboard: today's room utilisation
-- [ ] Admin dashboard: most booked rooms (current month)
-- [ ] Admin dashboard: top cost centres by booking count
-- [ ] Admin dashboard: catering summary for current month
-- [ ] Admin dashboard: Exchange sync status indicator
+- [x] Exchange EWS integration (create, update, cancel calendar items in resource mailboxes)
+- [x] Microsoft Graph API integration (primary alternative to EWS)
+- [x] Room-to-resource-mailbox mapping configuration in admin UI
+- [x] Exchange sync log in admin backend (per-booking status, error messages, retry history)
+- [x] Retry mechanism for failed Exchange sync operations
+- [x] Report: bookings per cost centre (month, year, custom range)
+- [x] Report: bookings per room (month, year, custom range)
+- [x] Report: catering quantities (beverages, pastries, bread rolls) by room / cost centre
+- [x] Report: room utilisation rate by room
+- [x] Report: bookings per company
+- [x] Report: cancelled bookings by room / cost centre
+- [x] PDF report export (print-to-PDF via print-CSS; server-side HTML with Chart.js)
+- [x] CSV raw data export
+- [x] Admin dashboard: today's room utilisation
+- [x] Admin dashboard: most booked rooms (current month)
+- [x] Admin dashboard: top cost centres by booking count
+- [x] Admin dashboard: catering summary for current month
+- [x] Admin dashboard: Exchange sync status indicator
 
 **Deliverable:** Exchange synchronisation (optional) and complete reporting & dashboard module.
 

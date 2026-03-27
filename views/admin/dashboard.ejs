@@ -95,6 +95,120 @@
     </div>
   </div>
 
+  <!-- M5 KPI Cards -->
+  <div class="row g-3 mb-4">
+    <!-- Room Utilisation -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-2">
+            <div class="flex-shrink-0 bg-info bg-opacity-10 rounded p-2 me-2">
+              <i class="bi bi-pie-chart text-info"></i>
+            </div>
+            <span class="text-muted small"><%= t('admin.dashCurrentUtilisation') %></span>
+          </div>
+          <div class="d-flex align-items-end gap-2">
+            <span class="fw-bold fs-4"><%= dashKpis.utilisationPct %>%</span>
+            <span class="text-muted small mb-1"><%= dashKpis.occupiedRooms %>/<%= dashKpis.totalActiveRooms %> rooms</span>
+          </div>
+          <div class="progress mt-2" style="height:6px">
+            <div class="progress-bar bg-info" style="width:<%= dashKpis.utilisationPct %>%"></div>
+          </div>
+          <a href="/admin/reports/utilisation" class="stretched-link"></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Exchange Sync Status -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-2">
+            <div class="flex-shrink-0 <%= dashKpis.exchangeFailedCount > 0 ? 'bg-danger' : 'bg-success' %> bg-opacity-10 rounded p-2 me-2">
+              <i class="bi bi-cloud-arrow-up <%= dashKpis.exchangeFailedCount > 0 ? 'text-danger' : 'text-success' %>"></i>
+            </div>
+            <span class="text-muted small"><%= t('admin.dashExchangeSync') %></span>
+          </div>
+          <% if (dashKpis.exchangeFailedCount > 0) { %>
+            <span class="badge bg-danger fs-6"><%= dashKpis.exchangeFailedCount %> failed</span>
+          <% } else { %>
+            <span class="badge bg-success">OK</span>
+          <% } %>
+          <a href="/admin/logs/exchange" class="stretched-link"></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Rooms this month -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white border-bottom py-2">
+          <span class="small fw-semibold"><i class="bi bi-trophy me-1 text-warning"></i><%= t('admin.dashTopRooms') %></span>
+        </div>
+        <div class="card-body py-2 px-3">
+          <% if (dashKpis.topRooms.length === 0) { %>
+            <span class="text-muted small">No bookings yet</span>
+          <% } else { %>
+            <% dashKpis.topRooms.slice(0, 3).forEach((r, i) => { %>
+              <div class="d-flex justify-content-between small py-1 border-bottom">
+                <span class="text-truncate me-2"><%= i+1 %>. <%= r.roomName %></span>
+                <span class="fw-semibold text-nowrap"><%= r.count %> <%= t('admin.dashBookings') %></span>
+              </div>
+            <% }) %>
+          <% } %>
+          <a href="/admin/reports/rooms" class="stretched-link"></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Cost Centres this month -->
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white border-bottom py-2">
+          <span class="small fw-semibold"><i class="bi bi-cash-coin me-1 text-primary"></i><%= t('admin.dashTopCostCentres') %></span>
+        </div>
+        <div class="card-body py-2 px-3">
+          <% if (dashKpis.topCostCentres.length === 0) { %>
+            <span class="text-muted small">No bookings yet</span>
+          <% } else { %>
+            <% dashKpis.topCostCentres.slice(0, 3).forEach((c, i) => { %>
+              <div class="d-flex justify-content-between small py-1 border-bottom">
+                <span class="text-truncate me-2"><%= i+1 %>. <%= c.costCentre %></span>
+                <span class="fw-semibold text-nowrap"><%= c.count %> <%= t('admin.dashBookings') %></span>
+              </div>
+            <% }) %>
+          <% } %>
+          <a href="/admin/reports/cost-centre" class="stretched-link"></a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Catering summary this month -->
+  <% if (dashKpis.cateringSummary.length > 0) { %>
+  <div class="row g-3 mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0"><i class="bi bi-cup-hot me-1"></i><%= t('admin.dashCateringSummary') %></h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <% dashKpis.cateringSummary.forEach(c => { %>
+              <div class="col-auto">
+                <div class="border rounded px-3 py-2 text-center">
+                  <div class="fw-bold fs-5"><%= c.quantity %></div>
+                  <div class="text-muted small"><%= c.option.replace(/_/g, ' ') %></div>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% } %>
+
   <!-- Quick links -->
   <div class="row g-3">
     <div class="col-md-6 col-xl-3">
@@ -170,7 +284,7 @@
           <a href="/admin/logs/audit" class="btn btn-sm btn-outline-primary"><%= t('common.viewAll') %></a>
         </div>
         <div class="card-body py-3">
-          <div class="d-flex gap-2">
+          <div class="d-flex gap-2 flex-wrap">
             <a href="/admin/logs/audit" class="btn btn-outline-secondary btn-sm">
               <i class="bi bi-journal-text me-1"></i><%= t('admin.auditLog') %>
             </a>
@@ -179,6 +293,28 @@
             </a>
             <a href="/admin/logs/email" class="btn btn-outline-secondary btn-sm">
               <i class="bi bi-envelope me-1"></i><%= t('admin.emailLog') %>
+            </a>
+            <a href="/admin/logs/exchange" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-cloud-arrow-up me-1"></i><%= t('admin.exchangeSyncLog') %>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+          <h6 class="mb-0"><%= t('admin.reports') %></h6>
+          <a href="/admin/reports" class="btn btn-sm btn-outline-primary"><%= t('common.viewAll') %></a>
+        </div>
+        <div class="card-body py-3">
+          <div class="d-flex gap-2 flex-wrap">
+            <a href="/admin/reports/cost-centre" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-cash-coin me-1"></i><%= t('admin.reportCostCentre') %>
+            </a>
+            <a href="/admin/reports/utilisation" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-pie-chart me-1"></i><%= t('admin.reportUtilisation') %>
             </a>
           </div>
         </div>

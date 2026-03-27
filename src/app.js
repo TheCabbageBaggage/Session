@@ -17,6 +17,7 @@ const indexRouter    = require('./routes/index');
 const authRouter     = require('./routes/auth');
 const bookingsRouter = require('./routes/bookings');
 const adminRouter    = require('./routes/admin/index');
+const reportsRouter  = require('./routes/admin/reports');
 const publicRouter   = require('./routes/public');
 const profileRouter  = require('./routes/profile');
 const healthRouter    = require('./routes/api/health');
@@ -104,9 +105,10 @@ app.use('/login',    loginLimiter, authRouter);
 app.use('/logout',   authRouter);
 app.use('/public',   publicRouter);
 app.use('/profile',  profileRouter);
-app.use('/bookings', bookingsRouter);
-app.use('/admin',    adminRouter);
-app.use('/',         indexRouter);
+app.use('/bookings',       bookingsRouter);
+app.use('/admin/reports',  reportsRouter);
+app.use('/admin',          adminRouter);
+app.use('/',               indexRouter);
 
 // ---------------------------------------------------------------------------
 // Error handling
