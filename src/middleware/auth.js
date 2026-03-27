@@ -75,7 +75,7 @@ function isAdmin(user) {
 }
 
 function redirectOrUnauthorized(req, res) {
-  if (req.path.startsWith('/api/')) {
+  if (req.path.startsWith('/api/') || req.originalUrl.startsWith('/api/')) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   return res.redirect(`/login?next=${encodeURIComponent(req.originalUrl)}`);

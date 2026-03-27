@@ -122,4 +122,4 @@ function generateSeriesOccurrenceIcal(booking, seriesId, method = 'REQUEST', seq
     .replace(/^UID:.*$/m, fold(`UID:${uid}`));
 }
 
-module.exports = { generateBookingIcal, generateSeriesOccurrenceIcal, toIcalDt };
+module.exports = { generateBookingIcal, generateSeriesOccurrenceIcal, toIcalDt, fold, escapeText };
