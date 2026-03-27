@@ -27,17 +27,20 @@ model Role {
 // ---------------------------------------------------------------------------
 
 model User {
-  id          Int       @id @default(autoincrement())
-  username    String    @unique  // sAMAccountName from AD
-  firstName   String
-  lastName    String
-  email       String    @unique
-  isLocal     Boolean   @default(false)  // true for admin/user built-in accounts
-  passwordHash String?  // only for local accounts
-  isActive    Boolean   @default(true)
-  lastLogin   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id            Int       @id @default(autoincrement())
+  username      String    @unique  // sAMAccountName from AD
+  firstName     String
+  lastName      String
+  email         String    @unique
+  isLocal       Boolean   @default(false)  // true for admin/user built-in accounts
+  passwordHash  String?   // only for local accounts
+  isActive      Boolean   @default(true)
+  mustChangePwd Boolean   @default(false)  // forced password change on next login
+  isProtected   Boolean   @default(false)  // admin account – cannot be deleted/demoted
+  adObjectGuid  String?   @unique          // AD objectGUID for stable identity
+  lastLogin     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   profile     UserProfile?
   roles       UserRole[]

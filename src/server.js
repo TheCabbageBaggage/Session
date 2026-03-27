@@ -6,6 +6,7 @@ const http = require('http');
 const app = require('./app');
 const logger = require('./logger');
 const prisma = require('./db/prisma');
+const adSyncJob = require('./jobs/adSyncJob');
 
 const PORT = process.env.PORT || 3000;
 
@@ -28,10 +29,14 @@ async function start() {
       pid: process.pid,
     });
   });
+
+  // Start background jobs
+  adSyncJob.start();
 }
 
 async function shutdown(signal) {
   logger.info(`${signal} received – shutting down gracefully`);
+  adSyncJob.stop();
   server.close(async () => {
     await prisma.$disconnect();
     logger.info('Server closed');

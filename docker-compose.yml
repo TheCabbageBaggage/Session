@@ -59,9 +59,34 @@ services:
     profiles:
       - migrate
 
+  # OpenLDAP – local AD mock for development
+  # Activate with: docker compose --profile ldap up -d
+  ldap:
+    image: osixia/openldap:1.5.0
+    container_name: session-ldap
+    environment:
+      LDAP_ORGANISATION: "Session Dev"
+      LDAP_DOMAIN: "dev.local"
+      LDAP_ADMIN_PASSWORD: "admin"
+      LDAP_CONFIG_PASSWORD: "config"
+      LDAP_RFC2307BIS_SCHEMA: "false"
+      LDAP_REMOVE_CONFIG_AFTER_SETUP: "true"
+    ports:
+      - "389:389"
+      - "636:636"
+    volumes:
+      - ldap-data:/var/lib/ldap
+      - ldap-config:/etc/ldap/slapd.d
+    networks:
+      - session-network
+    profiles:
+      - ldap
+
 volumes:
   postgres-data:
   uploads:
+  ldap-data:
+  ldap-config:
 
 networks:
   session-network:

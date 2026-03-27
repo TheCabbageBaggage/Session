@@ -10,7 +10,7 @@ const rateLimit = require('express-rate-limit');
 
 const logger = require('./logger');
 const i18nMiddleware = require('./middleware/i18n');
-const { optionalAuth } = require('./middleware/auth');
+const { optionalAuth, enforcePasswordChange } = require('./middleware/auth');
 const { errorHandler, notFound } = require('./middleware/errorHandler');
 
 const indexRouter    = require('./routes/index');
@@ -20,6 +20,7 @@ const adminRouter    = require('./routes/admin/index');
 const publicRouter   = require('./routes/public');
 const profileRouter  = require('./routes/profile');
 const healthRouter   = require('./routes/api/health');
+const usersApiRouter = require('./routes/api/users');
 
 const app = express();
 
@@ -86,11 +87,13 @@ const apiLimiter = rateLimit({
 // ---------------------------------------------------------------------------
 app.use(optionalAuth);
 app.use(i18nMiddleware);
+app.use(enforcePasswordChange);
 
 // ---------------------------------------------------------------------------
 // Routes
 // ---------------------------------------------------------------------------
 app.use('/api/health', healthRouter);
+app.use('/api/users',  usersApiRouter);
 app.use('/api', apiLimiter);
 
 app.use('/login',    loginLimiter, authRouter);

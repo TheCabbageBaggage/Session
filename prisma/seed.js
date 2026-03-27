@@ -34,7 +34,9 @@ async function main() {
       lastName: 'Administrator',
       email: 'admin@localhost',
       isLocal: true,
+      isProtected: true,
       passwordHash: adminPasswordHash,
+      mustChangePwd: true,
       isActive: true,
       profile: {
         create: { language: 'en' },
@@ -55,6 +57,7 @@ async function main() {
       email: 'user@localhost',
       isLocal: true,
       passwordHash: userPasswordHash,
+      mustChangePwd: true,
       isActive: true,
       profile: {
         create: { language: 'en' },

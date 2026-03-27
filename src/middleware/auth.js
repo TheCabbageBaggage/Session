@@ -81,4 +81,19 @@ function redirectOrUnauthorized(req, res) {
   return res.redirect(`/login?next=${encodeURIComponent(req.originalUrl)}`);
 }
 
-module.exports = { requireAuth, requireAdmin, optionalAuth, isAdmin };
+/**
+ * Redirect to /change-password if the user must change their password.
+ * Must be used after requireAuth.
+ */
+function enforcePasswordChange(req, res, next) {
+  if (req.user?.mustChangePwd && req.user?.isLocal) {
+    // Allow the change-password route and logout through
+    if (req.path.startsWith('/change-password') || req.path.startsWith('/logout')) {
+      return next();
+    }
+    return res.redirect('/change-password');
+  }
+  next();
+}
+
+module.exports = { requireAuth, requireAdmin, optionalAuth, isAdmin, enforcePasswordChange };

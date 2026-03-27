@@ -40,18 +40,18 @@
 
 **Goal:** Full AD authentication, daily sync job, user profile database table, language switching.
 
-- [ ] Implement LDAP/LDAPS connection and credential validation on login
-- [ ] Implement daily scheduled AD sync job (group membership, name, email import)
-- [ ] Create `user_profiles` table and profile management UI (user self-service + admin edit)
-- [ ] Implement JWT session token issuance and validation (HttpOnly cookie)
-- [ ] Role assignment from AD group configuration
-- [ ] Admin UI: user list, profile editing, role override, manual deactivation
-- [ ] Implement language selection (English / German) with i18n resource files
-- [ ] Language preference stored in user profile; applied globally to UI and emails
-- [ ] Implement default local accounts (`admin` / `user`) with bcrypt password storage
-- [ ] Mandatory password change prompt on first login for default accounts
-- [ ] Warning banner in admin backend if default passwords are still active
-- [ ] Emergency admin account (local DB) as AD fallback
+- [x] Implement LDAP/LDAPS connection and credential validation on login
+- [x] Implement daily scheduled AD sync job (group membership, name, email import)
+- [x] Create `user_profiles` table and profile management UI (user self-service + admin edit)
+- [x] Implement JWT session token issuance and validation (HttpOnly cookie)
+- [x] Role assignment from AD group configuration
+- [x] Admin UI: user list, profile editing, role override, manual deactivation
+- [x] Implement language selection (English / German) with i18n resource files
+- [x] Language preference stored in user profile; applied globally to UI and emails
+- [x] Implement default local accounts (`admin` / `user`) with bcrypt password storage
+- [x] Mandatory password change prompt on first login for default accounts
+- [x] Warning banner in admin backend if default passwords are still active
+- [x] Emergency admin account (local DB) as AD fallback
 
 **Deliverable:** Complete authentication flow via AD, daily sync, user profiles in DB, and language switching.
 
