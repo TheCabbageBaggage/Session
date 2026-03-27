@@ -2,22 +2,122 @@
 <%- include('../partials/navbar') %>
 
 <main class="container-fluid py-4">
-  <div class="row mb-4">
+  <div class="row mb-4 align-items-center">
     <div class="col">
-      <h2><i class="bi bi-door-open me-2"></i><%= t('admin.rooms') %></h2>
+      <h2 class="mb-0"><i class="bi bi-door-open me-2"></i><%= t('admin.rooms') %></h2>
     </div>
-    <div class="col-auto">
-      <button class="btn btn-primary" disabled>
+    <div class="col-auto d-flex gap-2">
+      <a href="/admin/seating-layouts" class="btn btn-outline-secondary">
+        <i class="bi bi-grid-3x3 me-1"></i><%= t('admin.seatingLayouts') %>
+      </a>
+      <a href="/admin/companies" class="btn btn-outline-secondary">
+        <i class="bi bi-building me-1"></i><%= t('admin.companies') %>
+      </a>
+      <a href="/admin/rooms/new" class="btn btn-primary">
         <i class="bi bi-plus-circle me-1"></i><%= t('admin.addRoom') %>
-      </button>
+      </a>
     </div>
   </div>
 
-  <div class="card border-0 shadow-sm">
-    <div class="card-body text-center py-5 text-muted">
-      <i class="bi bi-door-closed fs-1 d-block mb-2"></i>
-      <p class="mb-0"><%= t('admin.roomsComingSoon') %></p>
+  <% if (success) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <i class="bi bi-check-circle me-1"></i>
+      <% if (success === 'created') { %><%= t('admin.roomCreated') %>
+      <% } else if (success === 'updated') { %><%= t('admin.roomUpdated') %>
+      <% } else if (success === 'deleted') { %><%= t('admin.roomDeactivated') %>
+      <% } %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
+  <% } %>
+  <% if (error) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <i class="bi bi-exclamation-triangle me-1"></i><%= error %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <div class="card border-0 shadow-sm">
+    <% if (rooms.length === 0) { %>
+      <div class="card-body text-center py-5 text-muted">
+        <i class="bi bi-door-closed fs-1 d-block mb-2"></i>
+        <p class="mb-2"><%= t('admin.noRoomsYet') %></p>
+        <a href="/admin/rooms/new" class="btn btn-primary">
+          <i class="bi bi-plus-circle me-1"></i><%= t('admin.addRoom') %>
+        </a>
+      </div>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th><%= t('admin.roomName') %></th>
+              <th><%= t('admin.roomType') %></th>
+              <th><%= t('admin.capacity') %></th>
+              <th><%= t('admin.location') %></th>
+              <th><%= t('admin.catering') %></th>
+              <th><%= t('admin.status') %></th>
+              <th class="text-end"><%= t('common.actions') %></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% rooms.forEach(room => { %>
+              <tr class="<%= room.isActive ? '' : 'text-muted' %>">
+                <td>
+                  <% if (room.imagePath) { %>
+                    <img src="<%= room.imagePath %>" alt="" class="rounded me-2" style="width:32px;height:32px;object-fit:cover;">
+                  <% } else { %>
+                    <i class="bi bi-door-closed me-2 text-muted"></i>
+                  <% } %>
+                  <strong><%= room.name %></strong>
+                  <% if (room.description) { %>
+                    <br><small class="text-muted"><%= room.description %></small>
+                  <% } %>
+                </td>
+                <td>
+                  <% if (room.type === 'MEETING_ROOM') { %>
+                    <span class="badge bg-primary-subtle text-primary"><i class="bi bi-people me-1"></i>Meeting Room</span>
+                  <% } else { %>
+                    <span class="badge bg-warning-subtle text-warning"><i class="bi bi-building me-1"></i>Hall</span>
+                  <% } %>
+                </td>
+                <td><i class="bi bi-people me-1 text-muted"></i><%= room.capacity %></td>
+                <td><%= room.location || '–' %></td>
+                <td>
+                  <% if (room.cateringOptions && room.cateringOptions.length > 0) { %>
+                    <% room.cateringOptions.slice(0,3).forEach(opt => { %>
+                      <span class="badge bg-secondary-subtle text-secondary me-1"><%= opt.cateringOption %></span>
+                    <% }) %>
+                    <% if (room.cateringOptions.length > 3) { %>
+                      <span class="text-muted small">+<%= room.cateringOptions.length - 3 %></span>
+                    <% } %>
+                  <% } else { %>
+                    <span class="text-muted">–</span>
+                  <% } %>
+                </td>
+                <td>
+                  <% if (room.isActive) { %>
+                    <span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle me-1"></i><%= t('common.active') %></span>
+                  <% } else { %>
+                    <span class="badge bg-secondary-subtle text-secondary"><i class="bi bi-dash-circle me-1"></i><%= t('common.inactive') %></span>
+                  <% } %>
+                </td>
+                <td class="text-end">
+                  <a href="/admin/rooms/<%= room.id %>/edit" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <form method="POST" action="/admin/rooms/<%= room.id %>/delete" class="d-inline"
+                        onsubmit="return confirm('<%= t('admin.confirmDeactivateRoom') %>')">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" <%= !room.isActive ? 'disabled' : '' %>>
+                      <i class="bi bi-dash-circle"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
   </div>
 </main>
 

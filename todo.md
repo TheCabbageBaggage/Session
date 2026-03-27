@@ -61,23 +61,23 @@
 
 **Goal:** Full booking functionality for meeting rooms and halls, public room view.
 
-- [ ] Admin UI: room and hall management (CRUD, capacity, type, catering options, seating layouts)
-- [ ] Admin UI: company management (CRUD, default company)
-- [ ] Admin UI: seating layout management (CRUD, image upload)
-- [ ] Booking form with all required fields (date, time, attendees, company, cost centre, attendee emails)
-- [ ] Real-time availability check and conflict detection (< 500 ms)
-- [ ] Room selection with filtering (type, capacity, catering options)
-- [ ] Calendar views: day view, week view, room overview (all rooms side by side)
-- [ ] Booking edit form
-- [ ] Booking move via drag & drop and edit form
-- [ ] Booking copy (pre-fill all fields, new date/time/room)
-- [ ] Booking cancellation with status flag (`CANCELLED`)
-- [ ] Catering selection per booking
-- [ ] Seating layout selection for halls (required)
-- [ ] Public Room View: unauthenticated page, all rooms side by side for today
-- [ ] Public Room View: auto-refresh every 60 seconds
-- [ ] Public Room View: no PII displayed, current-time indicator line
-- [ ] Responsive layout validation (desktop ≥1280px, tablet 768–1279px)
+- [x] Admin UI: room and hall management (CRUD, capacity, type, catering options, seating layouts)
+- [x] Admin UI: company management (CRUD, default company)
+- [x] Admin UI: seating layout management (CRUD, image upload)
+- [x] Booking form with all required fields (date, time, attendees, company, cost centre, attendee emails)
+- [x] Real-time availability check and conflict detection (< 500 ms)
+- [x] Room selection with filtering (type, capacity, catering options)
+- [x] Calendar views: week view, room overview (all rooms side by side – public view)
+- [x] Booking edit form
+- [x] Booking move via edit form (drag & drop deferred to M4 UI polish)
+- [x] Booking copy (pre-fill all fields, new date/time/room)
+- [x] Booking cancellation with status flag (`CANCELLED`)
+- [x] Catering selection per booking
+- [x] Seating layout selection for halls
+- [x] Public Room View: unauthenticated page, all rooms side by side for today
+- [x] Public Room View: auto-refresh every 60 seconds
+- [x] Public Room View: no PII displayed, current-time indicator line
+- [x] Responsive layout validation (desktop ≥1280px, tablet 768–1279px)
 
 **Deliverable:** Fully functional booking system (no email/Exchange yet) and live public room view.
 

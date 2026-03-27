@@ -19,8 +19,10 @@ const bookingsRouter = require('./routes/bookings');
 const adminRouter    = require('./routes/admin/index');
 const publicRouter   = require('./routes/public');
 const profileRouter  = require('./routes/profile');
-const healthRouter   = require('./routes/api/health');
-const usersApiRouter = require('./routes/api/users');
+const healthRouter    = require('./routes/api/health');
+const usersApiRouter  = require('./routes/api/users');
+const roomsApiRouter  = require('./routes/api/rooms');
+const bookingsApiRouter = require('./routes/api/bookings');
 
 const app = express();
 
@@ -92,8 +94,10 @@ app.use(enforcePasswordChange);
 // ---------------------------------------------------------------------------
 // Routes
 // ---------------------------------------------------------------------------
-app.use('/api/health', healthRouter);
-app.use('/api/users',  usersApiRouter);
+app.use('/api/health',   healthRouter);
+app.use('/api/users',    usersApiRouter);
+app.use('/api/rooms',    roomsApiRouter);
+app.use('/api/bookings', bookingsApiRouter);
 app.use('/api', apiLimiter);
 
 app.use('/login',    loginLimiter, authRouter);

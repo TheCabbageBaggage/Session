@@ -1,0 +1,258 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+
+<main class="container py-4">
+  <div class="row mb-3 align-items-center">
+    <div class="col">
+      <h2 class="mb-0">
+        <i class="bi bi-calendar2-check me-2"></i>
+        <%= booking.title || (t('bookings.booking') + ' #' + booking.id) %>
+      </h2>
+    </div>
+    <div class="col-auto d-flex gap-2">
+      <a href="/bookings" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i><%= t('common.back') %>
+      </a>
+      <% if (booking.status === 'ACTIVE') { %>
+        <a href="/bookings/<%= booking.id %>/edit" class="btn btn-outline-primary btn-sm">
+          <i class="bi bi-pencil me-1"></i><%= t('common.edit') %>
+        </a>
+        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
+          <i class="bi bi-x-circle me-1"></i><%= t('bookings.cancel') %>
+        </button>
+      <% } %>
+    </div>
+  </div>
+
+  <% if (success) { %>
+    <div class="alert alert-success alert-dismissible fade show">
+      <i class="bi bi-check-circle me-1"></i>
+      <% if (success === 'created') { %><%= t('bookings.bookingCreated') %>
+      <% } else if (success === 'updated') { %><%= t('bookings.bookingUpdated') %>
+      <% } else if (success === 'cancelled') { %><%= t('bookings.bookingCancelled') %>
+      <% } else if (success === 'copied') { %><%= t('bookings.bookingCopied') %>
+      <% } else { %><%= t('common.success') %><% } %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <% if (booking.status === 'CANCELLED') { %>
+    <div class="alert alert-warning">
+      <i class="bi bi-x-circle me-1"></i><%= t('bookings.cancelledNote') %>
+    </div>
+  <% } %>
+
+  <div class="row g-4">
+    <!-- Main details -->
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-4"><%= t('bookings.room') %></dt>
+            <dd class="col-sm-8">
+              <% if (booking.room) { %>
+                <strong><%= booking.room.name %></strong>
+                <% if (booking.room.type === 'HALL') { %>
+                  <span class="badge bg-warning-subtle text-warning ms-1">Hall</span>
+                <% } %>
+              <% } else { %>–<% } %>
+            </dd>
+
+            <dt class="col-sm-4"><%= t('bookings.date') %></dt>
+            <dd class="col-sm-8">
+              <% const bookingDate = new Date(booking.date); %>
+              <%= bookingDate.toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %>
+            </dd>
+
+            <dt class="col-sm-4"><%= t('bookings.time') %></dt>
+            <dd class="col-sm-8">
+              <strong><%= booking.startTime %> – <%= booking.endTime %></strong>
+              <%
+                const [sh,sm] = booking.startTime.split(':').map(Number);
+                const [eh,em] = booking.endTime.split(':').map(Number);
+                const dur = (eh*60+em) - (sh*60+sm);
+                const durH = Math.floor(dur/60);
+                const durM = dur % 60;
+              %>
+              <span class="text-muted ms-2 small">(<%= durH > 0 ? durH + 'h ' : '' %><%= durM > 0 ? durM + 'min' : '' %>)</span>
+            </dd>
+
+            <dt class="col-sm-4"><%= t('bookings.attendees') %></dt>
+            <dd class="col-sm-8"><%= booking.attendeeCount %></dd>
+
+            <dt class="col-sm-4"><%= t('profile.company') %></dt>
+            <dd class="col-sm-8"><%= booking.company || '–' %></dd>
+
+            <dt class="col-sm-4"><%= t('profile.costCentre') %></dt>
+            <dd class="col-sm-8"><%= booking.costCentre || '–' %></dd>
+
+            <% if (booking.seatingLayout) { %>
+              <dt class="col-sm-4"><%= t('bookings.seatingLayout') %></dt>
+              <dd class="col-sm-8"><%= booking.seatingLayout.name %></dd>
+            <% } %>
+
+            <% if (booking.notes) { %>
+              <dt class="col-sm-4"><%= t('bookings.notes') %></dt>
+              <dd class="col-sm-8" style="white-space:pre-line;"><%= booking.notes %></dd>
+            <% } %>
+
+            <dt class="col-sm-4"><%= t('bookings.bookedBy') %></dt>
+            <dd class="col-sm-8">
+              <% if (booking.user) { %>
+                <%= booking.user.firstName %> <%= booking.user.lastName %>
+                <small class="text-muted ms-1">(@<%= booking.user.username %>)</small>
+              <% } else { %>–<% } %>
+            </dd>
+
+            <dt class="col-sm-4 mb-0"><%= t('common.status') %></dt>
+            <dd class="col-sm-8 mb-0">
+              <% if (booking.status === 'ACTIVE') { %>
+                <span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle me-1"></i>Active</span>
+              <% } else { %>
+                <span class="badge bg-danger-subtle text-danger"><i class="bi bi-x-circle me-1"></i>Cancelled</span>
+              <% } %>
+            </dd>
+          </dl>
+        </div>
+      </div>
+
+      <% if (booking.attendees && booking.attendees.length > 0) { %>
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-white border-bottom">
+            <strong><i class="bi bi-envelope me-1"></i><%= t('bookings.attendeeEmails') %></strong>
+          </div>
+          <div class="card-body">
+            <% booking.attendees.forEach(a => { %>
+              <span class="badge bg-light text-dark border me-1 mb-1"><%= a.email %></span>
+            <% }) %>
+          </div>
+        </div>
+      <% } %>
+
+      <% if (booking.catering && booking.catering.length > 0) { %>
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-white border-bottom">
+            <strong><i class="bi bi-cup-hot me-1"></i><%= t('bookings.catering') %></strong>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm mb-0">
+              <thead><tr><th><%= t('bookings.cateringOption') %></th><th><%= t('bookings.quantity') %></th></tr></thead>
+              <tbody>
+                <% booking.catering.forEach(c => { %>
+                  <tr><td><%= c.cateringOption %></td><td><%= c.quantity %></td></tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Actions sidebar -->
+    <div class="col-lg-4">
+      <% if (booking.status === 'ACTIVE') { %>
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-white border-bottom">
+            <strong><%= t('common.actions') %></strong>
+          </div>
+          <div class="card-body d-grid gap-2">
+            <a href="/bookings/<%= booking.id %>/edit" class="btn btn-outline-primary">
+              <i class="bi bi-pencil me-1"></i><%= t('bookings.editBooking') %>
+            </a>
+            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#copyModal">
+              <i class="bi bi-files me-1"></i><%= t('bookings.copyBooking') %>
+            </button>
+            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
+              <i class="bi bi-x-circle me-1"></i><%= t('bookings.cancel') %>
+            </button>
+          </div>
+        </div>
+      <% } %>
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <strong><%= t('bookings.bookingInfo') %></strong>
+        </div>
+        <div class="card-body small text-muted">
+          <div><strong>ID:</strong> #<%= booking.id %></div>
+          <div><strong><%= t('bookings.created') %>:</strong>
+            <%= new Date(booking.createdAt).toLocaleString('en-GB') %></div>
+          <% if (booking.updatedAt && booking.updatedAt !== booking.createdAt) { %>
+            <div><strong><%= t('bookings.updated') %>:</strong>
+              <%= new Date(booking.updatedAt).toLocaleString('en-GB') %></div>
+          <% } %>
+          <% if (booking.cancelledAt) { %>
+            <div><strong><%= t('bookings.cancelledAt') %>:</strong>
+              <%= new Date(booking.cancelledAt).toLocaleString('en-GB') %></div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Cancel modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="/bookings/<%= booking.id %>/cancel">
+        <div class="modal-header">
+          <h5 class="modal-title"><%= t('bookings.confirmCancelTitle') %></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p><%= t('bookings.confirmCancelBody') %></p>
+          <% if (booking.room) { %>
+            <div class="alert alert-light mb-0">
+              <strong><%= booking.room.name %></strong><br>
+              <%= new Date(booking.date).toLocaleDateString('en-GB') %>
+              &bull; <%= booking.startTime %> – <%= booking.endTime %>
+            </div>
+          <% } %>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><%= t('common.back') %></button>
+          <button type="submit" class="btn btn-danger"><%= t('bookings.cancelBooking') %></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Copy modal -->
+<div class="modal fade" id="copyModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="/bookings/<%= booking.id %>/copy">
+        <div class="modal-header">
+          <h5 class="modal-title"><%= t('bookings.copyBooking') %></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-3"><%= t('bookings.copyHint') %></p>
+          <div class="mb-3">
+            <label class="form-label fw-semibold"><%= t('bookings.date') %></label>
+            <input type="date" name="date" class="form-control"
+                   value="<%= new Date(booking.date).toISOString().slice(0,10) %>">
+          </div>
+          <div class="row g-2">
+            <div class="col">
+              <label class="form-label fw-semibold"><%= t('bookings.startTime') %></label>
+              <input type="time" name="startTime" class="form-control" value="<%= booking.startTime %>">
+            </div>
+            <div class="col">
+              <label class="form-label fw-semibold"><%= t('bookings.endTime') %></label>
+              <input type="time" name="endTime" class="form-control" value="<%= booking.endTime %>">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><%= t('common.cancel') %></button>
+          <button type="submit" class="btn btn-primary"><%= t('bookings.copyBooking') %></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
