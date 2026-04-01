@@ -38,16 +38,16 @@ router.get('/available', requireAuth, async (req, res, next) => {
       type: type || null,
       minCapacity: minCapacity ? Number(minCapacity) : null,
       cateringOptions,
+      excludeBookingId: excludeBookingId ? Number(excludeBookingId) : null,
     });
 
-    // If editing, re-include the current booking's room even if it would conflict
+    // If editing, re-include only the current booking's room when needed.
     if (excludeBookingId) {
-      const allRooms = await roomService.listRooms();
-      const availableIds = new Set(rooms.map(r => r.id));
-      // Add any rooms not already in the available set that this booking uses
-      allRooms.forEach(r => {
-        if (!availableIds.has(r.id)) rooms.push({ ...r, _currentBookingRoom: true });
-      });
+      const currentBooking = await bookingService.getBookingById(excludeBookingId);
+      if (currentBooking && !rooms.some((r) => r.id === currentBooking.roomId)) {
+        const currentRoom = await roomService.getRoomById(currentBooking.roomId);
+        if (currentRoom) rooms.push({ ...currentRoom, _currentBookingRoom: true });
+      }
     }
 
     res.json(rooms);

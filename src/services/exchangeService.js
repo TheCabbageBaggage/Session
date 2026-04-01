@@ -227,7 +227,15 @@ async function syncBooking(bookingId, operation) {
         externalId = await ewsRequest(cfg, ewsCreateSoap(booking), mailbox);
       } else if (operation === 'UPDATE') {
         if (externalId) {
-          try { await ewsRequest(cfg, ewsDeleteSoap(externalId), mailbox); } catch (_) {}
+          try {
+            await ewsRequest(cfg, ewsDeleteSoap(externalId), mailbox);
+          } catch (cleanupError) {
+            logger.warn('EWS cleanup before update failed', {
+              bookingId,
+              externalId,
+              message: cleanupError.message,
+            });
+          }
         }
         externalId = await ewsRequest(cfg, ewsCreateSoap(booking), mailbox);
       } else if (operation === 'CANCEL') {
@@ -279,7 +287,7 @@ async function retryFailed() {
     try {
       await syncBooking(log.bookingId, log.operation);
       retried++;
-    } catch (_) {
+    } catch {
       // syncBooking already logged the error
     }
   }

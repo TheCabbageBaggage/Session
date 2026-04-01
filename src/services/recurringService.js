@@ -78,7 +78,7 @@ function generateOccurrenceDates({ pattern, intervalValue = 1, weekdays = [], mo
   } else if (pattern === 'WEEKLY') {
     const days = weekdays.length > 0 ? weekdays.map(Number) : [start.getUTCDay()];
     // Walk forward week by week; collect each matching weekday within the week
-    let weekBase = new Date(start);
+    const weekBase = new Date(start);
     // Snap to start of the current week (Monday of start week)
     const dow    = weekBase.getUTCDay();
     weekBase.setUTCDate(weekBase.getUTCDate() - dow); // snap to Sunday of this week

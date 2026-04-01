@@ -9,9 +9,10 @@ const prisma = require('../db/prisma');
 const ldapService = require('../services/ldap');
 const userService = require('../services/userService');
 const { requireAuth } = require('../middleware/auth');
+const { getJwtSecret } = require('../config/security');
 const logger = require('../logger');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'changeme-dev-secret';
+const JWT_SECRET = getJwtSecret();
 const JWT_EXPIRY = process.env.JWT_EXPIRY || '8h';
 const COOKIE_NAME = 'session_token';
 

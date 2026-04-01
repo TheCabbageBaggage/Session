@@ -50,7 +50,7 @@ async function findConflicts({ roomId, date, startTime, endTime, excludeBookingI
  * Return rooms available for the given time slot.
  * Accepts optional filters: type, minCapacity, cateringOptions[].
  */
-async function getAvailableRooms({ date, startTime, endTime, type, minCapacity, cateringOptions = [] }) {
+async function getAvailableRooms({ date, startTime, endTime, type, minCapacity, cateringOptions = [], excludeBookingId = null }) {
   const dateObj = new Date(date);
   dateObj.setUTCHours(0, 0, 0, 0);
 
@@ -59,6 +59,7 @@ async function getAvailableRooms({ date, startTime, endTime, type, minCapacity, 
     where: {
       date: dateObj,
       status: 'ACTIVE',
+      ...(excludeBookingId ? { id: { not: Number(excludeBookingId) } } : {}),
       AND: [
         { startTime: { lt: endTime } },
         { endTime:   { gt: startTime } },

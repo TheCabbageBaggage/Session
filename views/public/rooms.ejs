@@ -175,8 +175,8 @@
   function bookingStyle(startTime, endTime) {
     const startMin = timeToMin(startTime);
     const endMin = timeToMin(endTime);
-    const top = (startMin - START_HOUR * 60) * 60; // 60px/hour
-    const height = Math.max((endMin - startMin) * 60, 20);
+    const top = (startMin - START_HOUR * 60) * PX_PER_MIN;
+    const height = Math.max((endMin - startMin) * PX_PER_MIN, 20);
     return `top:${top}px;height:${height}px;`;
   }
 
@@ -191,7 +191,7 @@
     return 'upcoming';
   }
 
-  const totalHeight = TOTAL_MIN * 60; // px
+  const totalHeight = TOTAL_MIN * PX_PER_MIN; // px
 %>
 
 <div class="rooms-grid" style="--room-count:<%= rooms.length %>;">
@@ -200,7 +200,7 @@
     <div class="timeline-area" id="timeAxis">
       <div class="timeline-inner" style="height:<%= totalHeight %>px;">
         <% for (let h = START_HOUR; h < END_HOUR; h++) { %>
-          <div class="time-label" style="top:<%= (h - START_HOUR) * 3600 / 60 %>px; position:absolute; width:100%;">
+          <div class="time-label" style="top:<%= (h - START_HOUR) * 60 * PX_PER_MIN %>px; position:absolute; width:100%;">
             <%= String(h).padStart(2,'0') %>:00
           </div>
         <% } %>
@@ -250,8 +250,8 @@
 
           <!-- Hour grid lines -->
           <% for (let h = START_HOUR; h < END_HOUR; h++) { %>
-            <div style="position:absolute;left:0;right:0;top:<%= (h - START_HOUR) * 3600 / 60 %>px;height:60px;border-bottom:1px solid #1f2937;"></div>
-            <div style="position:absolute;left:0;right:0;top:<%= (h - START_HOUR) * 3600 / 60 + 30 %>px;height:1px;background:#1f2937;opacity:.5;"></div>
+            <div style="position:absolute;left:0;right:0;top:<%= (h - START_HOUR) * 60 * PX_PER_MIN %>px;height:<%= 60 * PX_PER_MIN %>px;border-bottom:1px solid #1f2937;"></div>
+            <div style="position:absolute;left:0;right:0;top:<%= (h - START_HOUR) * 60 * PX_PER_MIN + 30 * PX_PER_MIN %>px;height:1px;background:#1f2937;opacity:.5;"></div>
           <% } %>
 
           <!-- Bookings -->
@@ -277,7 +277,7 @@
   const START_HOUR = <%= START_HOUR %>;
   const END_HOUR = <%= END_HOUR %>;
   const TOTAL_MIN = (END_HOUR - START_HOUR) * 60;
-  const PX_PER_HOUR = 60;
+  const PX_PER_MIN = 1;
 
   // Live clock
   function updateClock() {
@@ -291,7 +291,7 @@
   function updateNowLines() {
     const now = new Date();
     const elapsed = (now.getHours() - START_HOUR) * 60 + now.getMinutes();
-    const top = elapsed * PX_PER_HOUR; // 60px/hour = 1px/min
+    const top = elapsed * PX_PER_MIN;
 
     document.querySelectorAll('[id^="nowLine_"]').forEach(line => {
       if (elapsed >= 0 && elapsed <= TOTAL_MIN) {

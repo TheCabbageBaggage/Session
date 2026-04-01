@@ -22,6 +22,9 @@ module.exports = [
         setInterval: 'readonly',
         clearInterval: 'readonly',
         Buffer: 'readonly',
+        fetch: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
       },
     },
     rules: {

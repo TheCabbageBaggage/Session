@@ -46,7 +46,7 @@ router.post(
       await userService.updateProfile(req.user.id, { company, costCentre, language });
       logger.info('User updated profile', { userId: req.user.id });
       res.redirect('/profile?success=1');
-    } catch (err) {
+    } catch {
       res.status(500).render('profile/index', {
         title: req.t('nav.profile'),
         error: req.t('errors.unexpected'),

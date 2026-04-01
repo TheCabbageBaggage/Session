@@ -2,9 +2,10 @@
 
 const jwt = require('jsonwebtoken');
 const prisma = require('../db/prisma');
+const { getJwtSecret } = require('../config/security');
 const logger = require('../logger');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'changeme-dev-secret';
+const JWT_SECRET = getJwtSecret();
 
 /**
  * Verify JWT from HttpOnly cookie and attach user to req.

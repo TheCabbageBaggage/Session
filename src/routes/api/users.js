@@ -28,6 +28,24 @@ router.get('/', requireAuth, requireAdmin, async (req, res, next) => {
 });
 
 // ---------------------------------------------------------------------------
+// GET /api/users/me – current user's own profile
+// ---------------------------------------------------------------------------
+router.get('/me', requireAuth, async (req, res) => {
+  const { passwordHash, ...safeUser } = req.user;
+  res.json(safeUser);
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/users/roles – list all roles
+// ---------------------------------------------------------------------------
+router.get('/roles/list', requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const roles = await prisma.role.findMany({ orderBy: { name: 'asc' } });
+    res.json(roles);
+  } catch (err) { next(err); }
+});
+
+// ---------------------------------------------------------------------------
 // GET /api/users/:id – single user (admin only)
 // ---------------------------------------------------------------------------
 router.get('/:id', requireAuth, requireAdmin, async (req, res, next) => {
@@ -36,14 +54,6 @@ router.get('/:id', requireAuth, requireAdmin, async (req, res, next) => {
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(user);
   } catch (err) { next(err); }
-});
-
-// ---------------------------------------------------------------------------
-// GET /api/users/me – current user's own profile
-// ---------------------------------------------------------------------------
-router.get('/me', requireAuth, async (req, res) => {
-  const { passwordHash, ...safeUser } = req.user;
-  res.json(safeUser);
 });
 
 // ---------------------------------------------------------------------------
@@ -96,16 +106,6 @@ router.post('/:id/deactivate', requireAuth, requireAdmin, async (req, res, next)
     if (err.status) return res.status(err.status).json({ error: err.message });
     next(err);
   }
-});
-
-// ---------------------------------------------------------------------------
-// GET /api/users/roles – list all roles
-// ---------------------------------------------------------------------------
-router.get('/roles/list', requireAuth, requireAdmin, async (req, res, next) => {
-  try {
-    const roles = await prisma.role.findMany({ orderBy: { name: 'asc' } });
-    res.json(roles);
-  } catch (err) { next(err); }
 });
 
 module.exports = router;
