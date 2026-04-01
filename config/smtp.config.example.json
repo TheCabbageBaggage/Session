@@ -1,0 +1,17 @@
+{
+  "host": "smtp.example.com",
+  "port": 587,
+  "secure": false,
+  "tls": {
+    "rejectUnauthorized": true
+  },
+  "auth": {
+    "user": "session@example.com",
+    "password": "ENCRYPTED:replace-with-aes256-encrypted-value"
+  },
+  "from": {
+    "name": "Session Room Booking",
+    "address": "session@example.com"
+  },
+  "replyTo": "no-reply@example.com"
+}

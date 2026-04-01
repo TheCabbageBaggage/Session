@@ -1,0 +1,466 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+
+<main class="container py-4">
+  <div class="row mb-3 align-items-center">
+    <div class="col">
+      <h2 class="mb-0">
+        <i class="bi bi-<%= booking ? 'pencil' : 'plus-circle' %> me-2"></i><%= title %>
+      </h2>
+    </div>
+    <div class="col-auto">
+      <a href="<%= booking ? '/bookings/' + booking.id : '/bookings' %>" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i><%= t('common.back') %>
+      </a>
+    </div>
+  </div>
+
+  <% if (error) { %>
+    <div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-1"></i><%= error %></div>
+  <% } %>
+
+  <% if (series) { %>
+    <div class="alert alert-info d-flex align-items-center">
+      <i class="bi bi-arrow-repeat me-2"></i>
+      <span><%= t('bookings.partOfSeries') %>: <%= series.pattern %> &bull; <%= series.bookings.filter(b => b.status === 'ACTIVE').length %> <%= t('bookings.occurrences') %></span>
+    </div>
+  <% } %>
+
+  <form method="POST" action="<%= booking ? '/bookings/' + booking.id + '/edit' : '/bookings' %>">
+
+    <!-- Series edit scope (only when editing a recurring booking) -->
+    <% if (booking && series) { %>
+      <div class="card border-0 shadow-sm mb-4 border-info">
+        <div class="card-header bg-info-subtle border-bottom">
+          <strong><i class="bi bi-arrow-repeat me-1"></i><%= t('bookings.editScope') %></strong>
+        </div>
+        <div class="card-body">
+          <div class="d-flex flex-wrap gap-3">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="editScope" id="scopeSingle" value="single" checked>
+              <label class="form-check-label" for="scopeSingle">
+                <strong><%= t('bookings.editScopeThis') %></strong>
+                <small class="text-muted d-block"><%= t('bookings.editScopeThisHint') %></small>
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="editScope" id="scopeFuture" value="future">
+              <label class="form-check-label" for="scopeFuture">
+                <strong><%= t('bookings.editScopeFuture') %></strong>
+                <small class="text-muted d-block"><%= t('bookings.editScopeFutureHint') %></small>
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="editScope" id="scopeSeries" value="series">
+              <label class="form-check-label" for="scopeSeries">
+                <strong><%= t('bookings.editScopeAll') %></strong>
+                <small class="text-muted d-block"><%= t('bookings.editScopeAllHint') %></small>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% } %>
+
+    <div class="row g-4">
+      <!-- Main fields -->
+      <div class="col-lg-8">
+
+        <!-- Date & Time -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-white border-bottom">
+            <strong><i class="bi bi-clock me-1"></i><%= t('bookings.dateTime') %></strong>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label fw-semibold" for="date"><%= t('bookings.date') %> <span class="text-danger">*</span></label>
+                <input type="date" id="date" name="date" class="form-control"
+                       value="<%= prefill.date || '' %>" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold" for="startTime"><%= t('bookings.startTime') %> <span class="text-danger">*</span></label>
+                <input type="time" id="startTime" name="startTime" class="form-control"
+                       value="<%= prefill.startTime || '09:00' %>" required step="900">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold" for="endTime"><%= t('bookings.endTime') %> <span class="text-danger">*</span></label>
+                <input type="time" id="endTime" name="endTime" class="form-control"
+                       value="<%= prefill.endTime || '10:00' %>" required step="900">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recurrence (new bookings only) -->
+        <% if (!booking) { %>
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between">
+            <strong><i class="bi bi-arrow-repeat me-1"></i><%= t('bookings.recurrence') %></strong>
+            <div class="form-check form-switch mb-0">
+              <input class="form-check-input" type="checkbox" id="recurringToggle" name="recurring" value="on">
+              <label class="form-check-label" for="recurringToggle"><%= t('bookings.enableRecurrence') %></label>
+            </div>
+          </div>
+          <div id="recurrencePanel" class="card-body d-none">
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold"><%= t('bookings.recurrencePattern') %></label>
+                <select name="pattern" id="recPattern" class="form-select">
+                  <option value="DAILY"><%= t('bookings.patternDaily') %></option>
+                  <option value="WEEKLY"><%= t('bookings.patternWeekly') %></option>
+                  <option value="MONTHLY"><%= t('bookings.patternMonthly') %></option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold"><%= t('bookings.recurrenceInterval') %></label>
+                <div class="input-group">
+                  <span class="input-group-text"><%= t('bookings.every') %></span>
+                  <input type="number" name="intervalValue" class="form-control" value="1" min="1" max="99">
+                  <span class="input-group-text" id="intervalUnit"><%= t('bookings.days') %></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Weekly: day checkboxes -->
+            <div id="weekdayPanel" class="mb-3 d-none">
+              <label class="form-label fw-semibold"><%= t('bookings.repeatOnDays') %></label>
+              <div class="d-flex flex-wrap gap-2">
+                <% ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach((d, i) => { %>
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" name="weekdays" value="<%= i %>" id="wd_<%= i %>">
+                    <label class="form-check-label" for="wd_<%= i %>"><%= d %></label>
+                  </div>
+                <% }) %>
+              </div>
+            </div>
+
+            <!-- Monthly: mode -->
+            <div id="monthlyPanel" class="mb-3 d-none">
+              <label class="form-label fw-semibold"><%= t('bookings.monthlyMode') %></label>
+              <select name="monthlyMode" class="form-select form-select-sm" style="max-width:320px;">
+                <option value="SAME_DAY"><%= t('bookings.monthlyModeDay') %></option>
+                <option value="SAME_WEEKDAY"><%= t('bookings.monthlyModeWeekday') %></option>
+              </select>
+            </div>
+
+            <!-- End condition -->
+            <div class="row g-3">
+              <div class="col-md-5">
+                <label class="form-label fw-semibold"><%= t('bookings.recurrenceEnd') %></label>
+                <select name="endType" id="endType" class="form-select">
+                  <option value="date"><%= t('bookings.endByDate') %></option>
+                  <option value="count"><%= t('bookings.endAfterCount') %></option>
+                </select>
+              </div>
+              <div class="col-md-7" id="endDatePanel">
+                <label class="form-label fw-semibold"><%= t('bookings.endDate') %></label>
+                <input type="date" name="recEndDate" class="form-control">
+              </div>
+              <div class="col-md-7 d-none" id="endCountPanel">
+                <label class="form-label fw-semibold"><%= t('bookings.endCount') %></label>
+                <div class="input-group">
+                  <input type="number" name="recCount" class="form-control" value="10" min="2" max="365">
+                  <span class="input-group-text"><%= t('bookings.occurrences') %></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <% } %>
+
+        <!-- Room selection -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between">
+            <strong><i class="bi bi-door-open me-1"></i><%= t('bookings.selectRoom') %></strong>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="checkAvailabilityBtn">
+              <i class="bi bi-search me-1"></i><%= t('bookings.checkAvailability') %>
+            </button>
+          </div>
+          <div class="card-body">
+            <div id="availabilityHint" class="text-muted small mb-3"><%= t('bookings.availabilityHint') %></div>
+            <div id="roomList">
+              <% if (rooms.length === 0) { %>
+                <p class="text-muted"><%= t('admin.noRoomsYet') %></p>
+              <% } else { %>
+                <div class="row g-2">
+                  <% rooms.forEach(room => { %>
+                    <div class="col-md-6">
+                      <div class="room-card border rounded p-3 h-100 <%= (prefill.roomId && Number(prefill.roomId) === room.id) ? 'border-primary' : '' %>"
+                           style="cursor:pointer;" onclick="selectRoom(<%= room.id %>)">
+                        <div class="d-flex align-items-start">
+                          <input type="radio" name="roomId" value="<%= room.id %>"
+                                 id="room_<%= room.id %>" class="form-check-input mt-1 me-2"
+                                 <%= (prefill.roomId && Number(prefill.roomId) === room.id) ? 'checked' : '' %> required>
+                          <label for="room_<%= room.id %>" class="flex-grow-1" style="cursor:pointer;">
+                            <strong class="d-block"><%= room.name %></strong>
+                            <small class="text-muted">
+                              <i class="bi bi-people me-1"></i><%= room.capacity %>
+                              <% if (room.location) { %>&bull; <%= room.location %><% } %>
+                              <% if (room.type === 'HALL') { %>
+                                &bull; <span class="badge bg-warning-subtle text-warning">Hall</span>
+                              <% } %>
+                            </small>
+                            <% if (room.cateringOptions && room.cateringOptions.length > 0) { %>
+                              <br><small class="text-muted">
+                                <i class="bi bi-cup-hot me-1"></i><%= room.cateringOptions.slice(0,3).map(c => c.cateringOption).join(', ') %>
+                              </small>
+                            <% } %>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  <% }) %>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Booking details -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-white border-bottom">
+            <strong><i class="bi bi-card-text me-1"></i><%= t('bookings.details') %></strong>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="title"><%= t('bookings.bookingTitle') %></label>
+              <input type="text" id="title" name="title" class="form-control"
+                     value="<%= booking ? (booking.title || '') : '' %>" maxlength="200"
+                     placeholder="<%= t('bookings.titlePlaceholder') %>">
+            </div>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label fw-semibold" for="attendeeCount"><%= t('bookings.attendees') %> <span class="text-danger">*</span></label>
+                <input type="number" id="attendeeCount" name="attendeeCount" class="form-control"
+                       value="<%= booking ? booking.attendeeCount : 1 %>" min="1" max="9999" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold" for="company"><%= t('profile.company') %> <span class="text-danger">*</span></label>
+                <% if (companies && companies.length > 0) { %>
+                  <select id="company" name="company" class="form-select" required>
+                    <% companies.filter(c => c.isActive).forEach(c => { %>
+                      <% const selected = booking ? (booking.company === c.name) : ((profile && profile.company === c.name) || c.isDefault); %>
+                      <option value="<%= c.name %>" <%= selected ? 'selected' : '' %>><%= c.name %></option>
+                    <% }) %>
+                  </select>
+                <% } else { %>
+                  <input type="text" id="company" name="company" class="form-control"
+                         value="<%= booking ? (booking.company || '') : (profile ? (profile.company || '') : '') %>"
+                         required maxlength="100">
+                <% } %>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold" for="costCentre"><%= t('profile.costCentre') %> <span class="text-danger">*</span></label>
+                <input type="text" id="costCentre" name="costCentre" class="form-control"
+                       value="<%= booking ? (booking.costCentre || '') : (profile ? (profile.costCentre || '') : '') %>"
+                       required maxlength="50" placeholder="e.g. IT-001">
+              </div>
+            </div>
+            <div class="mt-3">
+              <label class="form-label fw-semibold" for="notes"><%= t('bookings.notes') %></label>
+              <textarea id="notes" name="notes" class="form-control" rows="3"
+                        maxlength="1000"><%= booking ? (booking.notes || '') : '' %></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Seating layout -->
+        <% if (layouts && layouts.length > 0) { %>
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-bottom">
+              <strong><i class="bi bi-grid-3x3 me-1"></i><%= t('bookings.seatingLayout') %></strong>
+            </div>
+            <div class="card-body">
+              <select name="seatingLayoutId" class="form-select">
+                <option value=""><%= t('bookings.noLayout') %></option>
+                <% layouts.forEach(layout => { %>
+                  <option value="<%= layout.id %>"
+                          <%= (booking && booking.seatingLayoutId === layout.id) ? 'selected' : '' %>>
+                    <%= layout.name %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+          </div>
+        <% } %>
+
+      </div>
+
+      <!-- Right column: attendees, catering, actions -->
+      <div class="col-lg-4">
+
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-white border-bottom">
+            <strong><i class="bi bi-envelope me-1"></i><%= t('bookings.attendeeEmails') %></strong>
+          </div>
+          <div class="card-body">
+            <textarea name="attendeeEmails" class="form-control form-control-sm" rows="5"
+                      placeholder="one@example.com&#10;two@example.com"
+                      ><%= booking && booking.attendees ? booking.attendees.map(a => a.email).join('\n') : '' %></textarea>
+            <div class="form-text"><%= t('bookings.attendeeEmailsHint') %></div>
+            <div class="form-text text-info small mt-1">
+              <i class="bi bi-calendar-check me-1"></i><%= t('bookings.icalNote') %>
+            </div>
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+            <strong><i class="bi bi-cup-hot me-1"></i><%= t('bookings.catering') %></strong>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="addCateringRow">
+              <i class="bi bi-plus"></i>
+            </button>
+          </div>
+          <div class="card-body">
+            <div id="cateringRows">
+              <% if (booking && booking.catering && booking.catering.length > 0) { %>
+                <% booking.catering.forEach(c => { %>
+                  <div class="catering-row d-flex gap-2 mb-2">
+                    <input type="text" name="catering_option" class="form-control form-control-sm"
+                           value="<%= c.cateringOption %>" placeholder="<%= t('bookings.cateringOption') %>">
+                    <input type="number" name="catering_qty" class="form-control form-control-sm"
+                           value="<%= c.quantity %>" min="1" style="width:72px;">
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-catering">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                <% }) %>
+              <% } else { %>
+                <div class="catering-row d-flex gap-2 mb-2">
+                  <input type="text" name="catering_option" class="form-control form-control-sm"
+                         placeholder="<%= t('bookings.cateringOption') %>">
+                  <input type="number" name="catering_qty" class="form-control form-control-sm"
+                         value="1" min="1" style="width:72px;">
+                  <button type="button" class="btn btn-sm btn-outline-danger remove-catering">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              <% } %>
+            </div>
+            <div class="form-text"><%= t('bookings.cateringHint') %></div>
+          </div>
+        </div>
+
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="bi bi-check-lg me-1"></i>
+            <%= booking ? t('bookings.saveChanges') : t('bookings.confirmBooking') %>
+          </button>
+          <a href="<%= booking ? '/bookings/' + booking.id : '/bookings' %>" class="btn btn-outline-secondary">
+            <i class="bi bi-x me-1"></i><%= t('common.cancel') %>
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </form>
+</main>
+
+<script>
+  // Room selection highlight
+  function selectRoom(id) {
+    document.getElementById('room_' + id).checked = true;
+    document.querySelectorAll('.room-card').forEach(c => c.classList.remove('border-primary'));
+    const card = document.querySelector(`.room-card:has(#room_${id})`);
+    if (card) card.classList.add('border-primary');
+  }
+
+  // Recurrence toggle
+  const recurringToggle = document.getElementById('recurringToggle');
+  const recurrencePanel = document.getElementById('recurrencePanel');
+  if (recurringToggle) {
+    recurringToggle.addEventListener('change', () => {
+      recurrencePanel.classList.toggle('d-none', !recurringToggle.checked);
+    });
+  }
+
+  // Pattern change
+  const recPattern = document.getElementById('recPattern');
+  if (recPattern) {
+    const units = { DAILY: '<%= t("bookings.days") %>', WEEKLY: '<%= t("bookings.weeks") %>', MONTHLY: '<%= t("bookings.months") %>' };
+    recPattern.addEventListener('change', () => {
+      const p = recPattern.value;
+      document.getElementById('intervalUnit').textContent = units[p] || '';
+      document.getElementById('weekdayPanel').classList.toggle('d-none', p !== 'WEEKLY');
+      document.getElementById('monthlyPanel').classList.toggle('d-none', p !== 'MONTHLY');
+    });
+  }
+
+  // End type toggle
+  const endType = document.getElementById('endType');
+  if (endType) {
+    endType.addEventListener('change', () => {
+      document.getElementById('endDatePanel').classList.toggle('d-none', endType.value !== 'date');
+      document.getElementById('endCountPanel').classList.toggle('d-none', endType.value !== 'count');
+    });
+  }
+
+  // Catering rows
+  document.getElementById('addCateringRow').addEventListener('click', () => {
+    const row = document.createElement('div');
+    row.className = 'catering-row d-flex gap-2 mb-2';
+    row.innerHTML = '<input type="text" name="catering_option" class="form-control form-control-sm" placeholder="Option">' +
+      '<input type="number" name="catering_qty" class="form-control form-control-sm" value="1" min="1" style="width:72px;">' +
+      '<button type="button" class="btn btn-sm btn-outline-danger remove-catering"><i class="bi bi-trash"></i></button>';
+    document.getElementById('cateringRows').appendChild(row);
+  });
+  document.getElementById('cateringRows').addEventListener('click', (e) => {
+    const btn = e.target.closest('.remove-catering');
+    if (btn) btn.closest('.catering-row').remove();
+  });
+
+  // Availability check
+  document.getElementById('checkAvailabilityBtn').addEventListener('click', async () => {
+    const date = document.getElementById('date').value;
+    const startTime = document.getElementById('startTime').value;
+    const endTime = document.getElementById('endTime').value;
+    const hint = document.getElementById('availabilityHint');
+
+    if (!date || !startTime || !endTime) {
+      hint.innerHTML = '<span class="text-danger">Please select date and time first.</span>';
+      return;
+    }
+    if (startTime >= endTime) {
+      hint.innerHTML = '<span class="text-danger">End time must be after start time.</span>';
+      return;
+    }
+
+    hint.innerHTML = '<span class="text-muted"><i class="bi bi-hourglass-split me-1"></i>Checking…</span>';
+
+    try {
+      const resp = await fetch(`/api/rooms/available?date=${date}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`);
+      const available = await resp.json();
+      const availableIds = new Set(available.map(r => r.id));
+
+      document.querySelectorAll('.room-card').forEach(card => {
+        const input = card.querySelector('input[name="roomId"]');
+        if (!input) return;
+        const roomId = Number(input.value);
+        card.querySelector('.avail-badge')?.remove();
+        const badge = document.createElement('span');
+        if (availableIds.has(roomId)) {
+          card.classList.remove('opacity-50');
+          badge.className = 'avail-badge badge bg-success-subtle text-success ms-1';
+          badge.textContent = 'Available';
+          input.disabled = false;
+          card.style.cursor = 'pointer';
+        } else {
+          card.classList.add('opacity-50');
+          badge.className = 'avail-badge badge bg-danger-subtle text-danger ms-1';
+          badge.textContent = 'Unavailable';
+          input.checked = false;
+          input.disabled = true;
+          card.style.cursor = 'default';
+        }
+        card.querySelector('label').appendChild(badge);
+      });
+
+      hint.innerHTML = `<span class="text-success"><i class="bi bi-check-circle me-1"></i>${available.length} room(s) available.</span>`;
+    } catch (e) {
+      hint.innerHTML = '<span class="text-danger">Could not check availability.</span>';
+    }
+  });
+</script>
+
+<%- include('../partials/footer') %>

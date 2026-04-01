@@ -1,0 +1,175 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+
+<main class="container py-4">
+  <div class="row mb-4 align-items-center">
+    <div class="col">
+      <h2 class="mb-0"><i class="bi bi-grid-3x3 me-2"></i><%= t('admin.seatingLayouts') %></h2>
+    </div>
+    <div class="col-auto">
+      <a href="/admin/rooms" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i><%= t('admin.rooms') %>
+      </a>
+    </div>
+  </div>
+
+  <% if (success) { %>
+    <div class="alert alert-success alert-dismissible fade show">
+      <i class="bi bi-check-circle me-1"></i><%= t('admin.layoutSaved') %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+  <% if (error) { %>
+    <div class="alert alert-danger alert-dismissible fade show">
+      <i class="bi bi-exclamation-triangle me-1"></i><%= error %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <div class="row g-4">
+    <!-- List -->
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <% if (layouts.length === 0) { %>
+          <div class="card-body text-center py-5 text-muted">
+            <i class="bi bi-grid-3x3 fs-1 d-block mb-2"></i>
+            <p class="mb-0"><%= t('admin.noLayouts') %></p>
+          </div>
+        <% } else { %>
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th><%= t('admin.layoutName') %></th>
+                  <th><%= t('admin.description') %></th>
+                  <th><%= t('common.status') %></th>
+                  <th class="text-end"><%= t('common.actions') %></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% layouts.forEach(layout => { %>
+                  <tr>
+                    <td>
+                      <% if (layout.imagePath) { %>
+                        <img src="<%= layout.imagePath %>" alt=""
+                             class="rounded me-2" style="width:40px;height:28px;object-fit:cover;">
+                      <% } %>
+                      <strong><%= layout.name %></strong>
+                    </td>
+                    <td class="text-muted small"><%= layout.description || '–' %></td>
+                    <td>
+                      <% if (layout.isActive) { %>
+                        <span class="badge bg-success-subtle text-success"><%= t('common.active') %></span>
+                      <% } else { %>
+                        <span class="badge bg-secondary-subtle text-secondary"><%= t('common.inactive') %></span>
+                      <% } %>
+                    </td>
+                    <td class="text-end">
+                      <button type="button" class="btn btn-sm btn-outline-secondary"
+                              data-bs-toggle="modal" data-bs-target="#editLayoutModal"
+                              data-id="<%= layout.id %>"
+                              data-name="<%= layout.name %>"
+                              data-description="<%= layout.description || '' %>"
+                              data-active="<%= layout.isActive %>">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <form method="POST" action="/admin/seating-layouts/<%= layout.id %>/delete" class="d-inline"
+                            onsubmit="return confirm('<%= t('admin.confirmDeleteLayout') %>')">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Add form -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <strong><%= t('admin.addLayout') %></strong>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="/admin/seating-layouts/new" enctype="multipart/form-data">
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="newLayoutName"><%= t('admin.layoutName') %> <span class="text-danger">*</span></label>
+              <input type="text" id="newLayoutName" name="name" class="form-control" required maxlength="100">
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="newLayoutDesc"><%= t('admin.description') %></label>
+              <input type="text" id="newLayoutDesc" name="description" class="form-control" maxlength="250">
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold"><%= t('admin.layoutImage') %></label>
+              <input type="file" name="image" class="form-control" accept="image/*">
+            </div>
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="bi bi-plus-circle me-1"></i><%= t('admin.addLayout') %>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Edit layout modal -->
+<div class="modal fade" id="editLayoutModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" id="editLayoutForm" action="" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title"><%= t('admin.editLayout') %></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold"><%= t('admin.layoutName') %> <span class="text-danger">*</span></label>
+            <input type="text" name="name" id="editLayoutName" class="form-control" required maxlength="100">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold"><%= t('admin.description') %></label>
+            <input type="text" name="description" id="editLayoutDescription" class="form-control" maxlength="250">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold"><%= t('admin.replaceImage') %></label>
+            <input type="file" name="image" class="form-control" accept="image/*">
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="editLayoutActive" name="isActive" value="true">
+            <input type="hidden" name="isActive" value="false" id="editLayoutActiveHidden">
+            <label class="form-check-label" for="editLayoutActive"><%= t('admin.activeLayout') %></label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><%= t('common.cancel') %></button>
+          <button type="submit" class="btn btn-primary"><%= t('common.save') %></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  const editModal = document.getElementById('editLayoutModal');
+  editModal.addEventListener('show.bs.modal', (e) => {
+    const btn = e.relatedTarget;
+    document.getElementById('editLayoutForm').action = `/admin/seating-layouts/${btn.dataset.id}/edit`;
+    document.getElementById('editLayoutName').value = btn.dataset.name;
+    document.getElementById('editLayoutDescription').value = btn.dataset.description;
+    const activeCb = document.getElementById('editLayoutActive');
+    activeCb.checked = btn.dataset.active === 'true';
+    document.getElementById('editLayoutActiveHidden').disabled = activeCb.checked;
+  });
+  document.getElementById('editLayoutActive').addEventListener('change', (e) => {
+    document.getElementById('editLayoutActiveHidden').disabled = e.target.checked;
+  });
+</script>
+
+<%- include('../partials/footer') %>

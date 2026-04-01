@@ -1,0 +1,194 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+
+<main class="container py-4">
+
+  <div class="row mb-4 align-items-center">
+    <div class="col">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item"><a href="/admin/users"><%= t('admin.users') %></a></li>
+          <li class="breadcrumb-item active"><%= editUser.firstName %> <%= editUser.lastName %></li>
+        </ol>
+      </nav>
+    </div>
+    <div class="col-auto">
+      <a href="/admin/users" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i><%= t('common.back') %>
+      </a>
+    </div>
+  </div>
+
+  <% if (success || (typeof query !== 'undefined' && query && query.success)) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <i class="bi bi-check-circle-fill me-2"></i><%= t('admin.userSaved') %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <% if (error) { %>
+    <div class="alert alert-danger">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i><%= error %>
+    </div>
+  <% } %>
+
+  <div class="row g-4">
+
+    <!-- Left: account info -->
+    <div class="col-lg-8">
+
+      <!-- Personal details -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom">
+          <h5 class="mb-0"><%= t('admin.personalDetails') %></h5>
+        </div>
+        <div class="card-body">
+          <form action="/admin/users/<%= editUser.id %>/edit" method="POST" novalidate>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label for="firstName" class="form-label"><%= t('admin.firstName') %></label>
+                <input type="text" class="form-control" id="firstName" name="firstName"
+                  value="<%= editUser.firstName %>" required>
+              </div>
+              <div class="col-md-6">
+                <label for="lastName" class="form-label"><%= t('admin.lastName') %></label>
+                <input type="text" class="form-control" id="lastName" name="lastName"
+                  value="<%= editUser.lastName %>" required>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="email" class="form-label"><%= t('admin.email') %></label>
+              <input type="email" class="form-control" id="email" name="email"
+                value="<%= editUser.email %>" required>
+              <% if (!editUser.isLocal) { %>
+                <div class="form-text"><%= t('admin.adFieldNote') %></div>
+              <% } %>
+            </div>
+
+            <hr class="my-3">
+            <h6 class="mb-3"><%= t('profile.heading') %></h6>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label for="company" class="form-label"><%= t('profile.company') %></label>
+                <input type="text" class="form-control" id="company" name="company"
+                  value="<%= editUser.profile?.company || '' %>">
+              </div>
+              <div class="col-md-6">
+                <label for="costCentre" class="form-label"><%= t('profile.costCentre') %></label>
+                <input type="text" class="form-control" id="costCentre" name="costCentre"
+                  value="<%= editUser.profile?.costCentre || '' %>">
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label for="language" class="form-label"><%= t('profile.language') %></label>
+              <select class="form-select" id="language" name="language">
+                <option value="en" <%= (editUser.profile?.language || 'en') === 'en' ? 'selected' : '' %>>English</option>
+                <option value="de" <%= editUser.profile?.language === 'de' ? 'selected' : '' %>>Deutsch</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-lg me-1"></i><%= t('common.save') %>
+            </button>
+
+          </form>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right: role + account status -->
+    <div class="col-lg-4">
+
+      <!-- Role override -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0"><%= t('admin.roleAssignment') %></h6>
+        </div>
+        <div class="card-body">
+          <form action="/admin/users/<%= editUser.id %>/role" method="POST">
+            <div class="mb-3">
+              <label for="roleId" class="form-label"><%= t('admin.role') %></label>
+              <select class="form-select" id="roleId" name="roleId"
+                <%= editUser.isProtected ? 'disabled' : '' %>>
+                <% roles.forEach(r => { %>
+                  <option value="<%= r.id %>"
+                    <%= editUser.roles.some(ur => ur.role.id === r.id) ? 'selected' : '' %>>
+                    <%= r.name %>
+                  </option>
+                <% }) %>
+              </select>
+              <% if (editUser.isProtected) { %>
+                <div class="form-text text-warning">
+                  <i class="bi bi-shield-fill me-1"></i><%= t('admin.protectedRoleNote') %>
+                </div>
+              <% } %>
+            </div>
+            <button type="submit" class="btn btn-outline-primary btn-sm w-100"
+              <%= editUser.isProtected ? 'disabled' : '' %>>
+              <%= t('admin.updateRole') %>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Account info -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0"><%= t('admin.accountInfo') %></h6>
+        </div>
+        <div class="card-body">
+          <dl class="mb-0">
+            <dt class="small text-muted"><%= t('admin.username') %></dt>
+            <dd><code><%= editUser.username %></code></dd>
+
+            <dt class="small text-muted"><%= t('admin.type') %></dt>
+            <dd>
+              <span class="badge <%= editUser.isLocal ? 'bg-info text-dark' : 'bg-light text-dark border' %>">
+                <%= editUser.isLocal ? t('admin.localAccount') : t('admin.adAccount') %>
+              </span>
+            </dd>
+
+            <dt class="small text-muted"><%= t('admin.status') %></dt>
+            <dd>
+              <span class="badge <%= editUser.isActive ? 'bg-success' : 'bg-secondary' %>">
+                <%= editUser.isActive ? t('common.active') : t('common.inactive') %>
+              </span>
+            </dd>
+
+            <dt class="small text-muted"><%= t('admin.lastLogin') %></dt>
+            <dd class="small"><%= editUser.lastLogin ? editUser.lastLogin.toLocaleString() : '–' %></dd>
+
+            <% if (editUser.mustChangePwd) { %>
+              <dt class="small text-muted"><%= t('admin.mustChangePwd') %></dt>
+              <dd><span class="badge bg-warning text-dark"><%= t('common.yes') %></span></dd>
+            <% } %>
+          </dl>
+
+          <hr>
+          <% if (editUser.isActive && !editUser.isProtected) { %>
+            <form action="/admin/users/<%= editUser.id %>/deactivate" method="POST"
+              onsubmit="return confirm('<%= t('admin.confirmDeactivate') %>')">
+              <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                <i class="bi bi-person-x me-1"></i><%= t('admin.deactivate') %>
+              </button>
+            </form>
+          <% } else if (!editUser.isActive) { %>
+            <form action="/admin/users/<%= editUser.id %>/activate" method="POST">
+              <button type="submit" class="btn btn-outline-success btn-sm w-100">
+                <i class="bi bi-person-check me-1"></i><%= t('admin.activate') %>
+              </button>
+            </form>
+          <% } %>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>

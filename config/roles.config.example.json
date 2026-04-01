@@ -1,0 +1,14 @@
+{
+  "roles": [
+    {
+      "name": "Employee",
+      "description": "Regular authenticated user – can manage own bookings",
+      "adGroup": "employees"
+    },
+    {
+      "name": "Administrator",
+      "description": "Full system access – manages rooms, users, configuration, reports",
+      "adGroup": "administrators"
+    }
+  ]
+}

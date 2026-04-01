@@ -1,0 +1,14 @@
+{
+  "host": "localhost",
+  "port": 5432,
+  "database": "session_db",
+  "username": "session_user",
+  "password": "ENCRYPTED:replace-with-aes256-encrypted-value",
+  "ssl": false,
+  "pool": {
+    "min": 2,
+    "max": 20,
+    "idleTimeoutMs": 30000,
+    "connectionTimeoutMs": 5000
+  }
+}

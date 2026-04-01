@@ -1,0 +1,38 @@
+node_modules/
+.env
+.env.*
+!.env.example
+
+# Config files with real credentials (use .example.json versions)
+config/*.config.json
+!config/*.config.example.json
+
+# Prisma generated
+prisma/generated/
+
+# Logs
+logs/
+*.log
+
+# Coverage
+coverage/
+
+# Build outputs
+dist/
+build/
+
+# Uploads
+public/uploads/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docker volumes
+.postgres-data/

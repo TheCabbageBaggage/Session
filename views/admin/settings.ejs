@@ -1,0 +1,151 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+
+<main class="container py-4">
+  <div class="row mb-4 align-items-center">
+    <div class="col">
+      <h2 class="mb-0"><i class="bi bi-gear me-2"></i><%= t('admin.settings') %></h2>
+    </div>
+  </div>
+
+  <% if (success) { %>
+    <div class="alert alert-success alert-dismissible fade show">
+      <i class="bi bi-check-circle me-1"></i><%= success %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+  <% if (error) { %>
+    <div class="alert alert-danger alert-dismissible fade show">
+      <i class="bi bi-exclamation-triangle me-1"></i><%= error %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <!-- Nav tabs -->
+  <ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+      <a class="nav-link <%= tab === 'smtp' ? 'active' : '' %>" href="/admin/settings?tab=smtp">
+        <i class="bi bi-envelope me-1"></i>SMTP / Email
+      </a>
+    </li>
+  </ul>
+
+  <% if (tab === 'smtp' || !tab) { %>
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <strong><i class="bi bi-envelope me-1"></i><%= t('admin.smtpConfig') %></strong>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="/admin/settings/smtp">
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label fw-semibold"><%= t('admin.smtpHost') %> <span class="text-danger">*</span></label>
+                <input type="text" name="host" class="form-control" value="<%= smtp.host || '' %>"
+                       placeholder="smtp.office365.com" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold"><%= t('admin.smtpPort') %></label>
+                <input type="number" name="port" class="form-control" value="<%= smtp.port || 587 %>"
+                       min="1" max="65535">
+              </div>
+              <div class="col-12">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="smtpSecure" name="secure" value="true"
+                         <%= smtp.secure ? 'checked' : '' %>>
+                  <label class="form-check-label" for="smtpSecure">
+                    <%= t('admin.smtpSecure') %>
+                    <small class="text-muted">(TLS – usually port 465)</small>
+                  </label>
+                </div>
+                <div class="form-check mt-1">
+                  <input class="form-check-input" type="checkbox" id="smtpTlsReject" name="tlsRejectUnauthorized" value="true"
+                         <%= (smtp.tls && smtp.tls.rejectUnauthorized !== false) ? 'checked' : '' %>>
+                  <label class="form-check-label" for="smtpTlsReject">
+                    <%= t('admin.smtpTlsVerify') %>
+                  </label>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold"><%= t('admin.smtpUser') %></label>
+                <input type="text" name="authUser" class="form-control"
+                       value="<%= (smtp.auth && smtp.auth.user) || '' %>"
+                       placeholder="session@company.com" autocomplete="off">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold"><%= t('admin.smtpPassword') %></label>
+                <input type="password" name="authPassword" class="form-control"
+                       placeholder="<%= t('admin.smtpPasswordHint') %>" autocomplete="new-password">
+                <div class="form-text"><%= t('admin.smtpPasswordNote') %></div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold"><%= t('admin.smtpFromName') %></label>
+                <input type="text" name="fromName" class="form-control"
+                       value="<%= (smtp.from && smtp.from.name) || 'Session Room Booking' %>">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold"><%= t('admin.smtpFromAddress') %></label>
+                <input type="email" name="fromAddress" class="form-control"
+                       value="<%= (smtp.from && smtp.from.address) || '' %>"
+                       placeholder="session@company.com">
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold"><%= t('admin.smtpReplyTo') %></label>
+                <input type="email" name="replyTo" class="form-control"
+                       value="<%= smtp.replyTo || '' %>"
+                       placeholder="no-reply@company.com">
+              </div>
+            </div>
+            <div class="mt-4 d-flex gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg me-1"></i><%= t('common.save') %>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <!-- Test email -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom">
+          <strong><i class="bi bi-send me-1"></i><%= t('admin.testEmail') %></strong>
+        </div>
+        <div class="card-body">
+          <p class="text-muted small"><%= t('admin.testEmailHint') %></p>
+          <form method="POST" action="/admin/settings/smtp/test">
+            <div class="mb-3">
+              <label class="form-label fw-semibold"><%= t('admin.testEmailRecipient') %></label>
+              <input type="email" name="testTo" class="form-control"
+                     value="<%= req.user.email || '' %>" required>
+            </div>
+            <button type="submit" class="btn btn-outline-primary w-100">
+              <i class="bi bi-send me-1"></i><%= t('admin.sendTestEmail') %>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Info -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <strong><i class="bi bi-info-circle me-1"></i><%= t('admin.smtpInfo') %></strong>
+        </div>
+        <div class="card-body small text-muted">
+          <p><%= t('admin.smtpInfoText') %></p>
+          <ul class="mb-0">
+            <li><%= t('admin.smtpInfoBooking') %></li>
+            <li><%= t('admin.smtpInfoUpdate') %></li>
+            <li><%= t('admin.smtpInfoCancel') %></li>
+            <li><%= t('admin.smtpInfoIcal') %></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% } %>
+</main>
+
+<%- include('../partials/footer') %>

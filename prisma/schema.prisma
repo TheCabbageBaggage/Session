@@ -1,0 +1,370 @@
+// Session – Room Booking System
+// Prisma Schema v1.0
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Roles
+// ---------------------------------------------------------------------------
+
+model Role {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique // "Employee" | "Administrator"
+  userRoles UserRole[]
+
+  @@map("roles")
+}
+
+// ---------------------------------------------------------------------------
+// Users & Profiles
+// ---------------------------------------------------------------------------
+
+model User {
+  id            Int       @id @default(autoincrement())
+  username      String    @unique  // sAMAccountName from AD
+  firstName     String
+  lastName      String
+  email         String    @unique
+  isLocal       Boolean   @default(false)  // true for admin/user built-in accounts
+  passwordHash  String?   // only for local accounts
+  isActive      Boolean   @default(true)
+  mustChangePwd Boolean   @default(false)  // forced password change on next login
+  isProtected   Boolean   @default(false)  // admin account – cannot be deleted/demoted
+  adObjectGuid  String?   @unique          // AD objectGUID for stable identity
+  lastLogin     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile     UserProfile?
+  roles       UserRole[]
+  bookings    Booking[]
+  auditLogs   AuditLog[]
+
+  @@index([username])
+  @@index([email])
+  @@index([isActive])
+  @@map("users")
+}
+
+model UserProfile {
+  id           Int     @id @default(autoincrement())
+  userId       Int     @unique
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company      String?
+  costCentre   String?
+  language     String  @default("en")  // "en" | "de"
+
+  @@map("user_profiles")
+}
+
+model UserRole {
+  userId Int
+  roleId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+// ---------------------------------------------------------------------------
+// Companies
+// ---------------------------------------------------------------------------
+
+model Company {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  isDefault Boolean   @default(false)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("companies")
+}
+
+// ---------------------------------------------------------------------------
+// Seating Layouts
+// ---------------------------------------------------------------------------
+
+model SeatingLayout {
+  id          Int                  @id @default(autoincrement())
+  name        String               @unique
+  description String?
+  imagePath   String?
+  isActive    Boolean              @default(true)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  rooms       RoomSeatingLayout[]
+  bookings    Booking[]
+
+  @@map("seating_layouts")
+}
+
+// ---------------------------------------------------------------------------
+// Rooms
+// ---------------------------------------------------------------------------
+
+enum RoomType {
+  MEETING_ROOM
+  HALL
+}
+
+enum CateringOption {
+  NON_ALCOHOLIC_BEVERAGES
+  PASTRIES
+  BREAD_ROLLS
+}
+
+model Room {
+  id                   Int                  @id @default(autoincrement())
+  name                 String               @unique
+  description          String?
+  location             String?              // building / floor / wing
+  capacity             Int
+  type                 RoomType             @default(MEETING_ROOM)
+  imagePath            String?
+  exchangeMailbox      String?              // Exchange resource mailbox address
+  isActive             Boolean             @default(true)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  cateringOptions      RoomCateringOption[]
+  seatingLayouts       RoomSeatingLayout[]
+  bookings             Booking[]
+
+  @@index([isActive])
+  @@index([type])
+  @@map("rooms")
+}
+
+model RoomCateringOption {
+  roomId         Int
+  cateringOption CateringOption
+  room           Room           @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@id([roomId, cateringOption])
+  @@map("room_catering_options")
+}
+
+model RoomSeatingLayout {
+  roomId          Int
+  seatingLayoutId Int
+  room            Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  seatingLayout   SeatingLayout @relation(fields: [seatingLayoutId], references: [id], onDelete: Cascade)
+
+  @@id([roomId, seatingLayoutId])
+  @@map("room_seating_layouts")
+}
+
+// ---------------------------------------------------------------------------
+// Bookings
+// ---------------------------------------------------------------------------
+
+enum BookingStatus {
+  ACTIVE
+  CANCELLED
+}
+
+model RecurringSeries {
+  id              Int       @id @default(autoincrement())
+  pattern         String    // "DAILY" | "WEEKLY" | "MONTHLY"
+  intervalValue   Int       @default(1)  // every N days/weeks/months
+  weekdays        String?   // JSON array of weekdays for WEEKLY pattern e.g. "[1,3,5]"
+  monthlyMode     String?   // "SAME_DAY" | "SAME_WEEKDAY"
+  endDate         DateTime?
+  maxOccurrences  Int?
+  createdAt       DateTime  @default(now())
+
+  bookings        Booking[]
+
+  @@map("recurring_series")
+}
+
+model Booking {
+  id               Int              @id @default(autoincrement())
+  roomId           Int
+  userId           Int
+  title            String?          // optional booking title / purpose
+  date             DateTime         // date only (stored as date at midnight UTC)
+  startTime        String           // "HH:MM"
+  endTime          String           // "HH:MM"
+  attendeeCount    Int
+  company          String?          // overridable per booking
+  costCentre       String?          // overridable per booking
+  seatingLayoutId  Int?
+  status           BookingStatus    @default(ACTIVE)
+  recurringSeriesId Int?
+  notes            String?
+  cancelledAt      DateTime?
+  cancelledBy      Int?             // userId who cancelled
+  exchangeEventId  String?          // External Exchange / Graph calendar event ID
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  room             Room             @relation(fields: [roomId], references: [id])
+  user             User             @relation(fields: [userId], references: [id])
+  seatingLayout    SeatingLayout?   @relation(fields: [seatingLayoutId], references: [id])
+  recurringSeries  RecurringSeries? @relation(fields: [recurringSeriesId], references: [id])
+  catering         BookingCatering[]
+  attendees        BookingAttendee[]
+  auditLogs        AuditLog[]
+  exchangeSyncLogs ExchangeSyncLog[]
+  emailLogs        EmailLog[]
+
+  @@index([roomId])
+  @@index([userId])
+  @@index([date])
+  @@index([status])
+  @@index([recurringSeriesId])
+  @@map("bookings")
+}
+
+model BookingCatering {
+  id             Int            @id @default(autoincrement())
+  bookingId      Int
+  cateringOption CateringOption
+  quantity       Int            @default(1)
+  booking        Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingId, cateringOption])
+  @@map("booking_catering")
+}
+
+model BookingAttendee {
+  id        Int     @id @default(autoincrement())
+  bookingId Int
+  email     String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@map("booking_attendees")
+}
+
+// ---------------------------------------------------------------------------
+// Audit Log
+// ---------------------------------------------------------------------------
+
+enum AuditAction {
+  BOOKING_CREATED
+  BOOKING_UPDATED
+  BOOKING_CANCELLED
+  BOOKING_DELETED
+  BOOKING_MOVED
+  BOOKING_COPIED
+  USER_CREATED
+  USER_UPDATED
+  USER_DEACTIVATED
+  ROOM_CREATED
+  ROOM_UPDATED
+  ROOM_DELETED
+  CONFIG_CHANGED
+  LOGIN
+  LOGOUT
+}
+
+model AuditLog {
+  id         Int         @id @default(autoincrement())
+  userId     Int?
+  bookingId  Int?
+  action     AuditAction
+  entityType String?     // e.g. "booking", "user", "room"
+  entityId   Int?
+  details    String?     // JSON string with change details
+  ipAddress  String?
+  createdAt  DateTime    @default(now())
+
+  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  booking    Booking?    @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([bookingId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_log")
+}
+
+// ---------------------------------------------------------------------------
+// Exchange Sync Log
+// ---------------------------------------------------------------------------
+
+enum SyncStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  RETRY
+}
+
+model ExchangeSyncLog {
+  id          Int        @id @default(autoincrement())
+  bookingId   Int
+  operation   String     // "CREATE" | "UPDATE" | "CANCEL"
+  status      SyncStatus @default(PENDING)
+  attempts    Int        @default(0)
+  errorMessage String?
+  lastAttempt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  booking     Booking    @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@index([status])
+  @@map("exchange_sync_log")
+}
+
+// ---------------------------------------------------------------------------
+// Email Log
+// ---------------------------------------------------------------------------
+
+enum EmailStatus {
+  SENT
+  FAILED
+  QUEUED
+}
+
+model EmailLog {
+  id          Int         @id @default(autoincrement())
+  bookingId   Int?
+  recipient   String
+  subject     String
+  type        String      // "INVITATION" | "UPDATE" | "CANCELLATION"
+  status      EmailStatus @default(QUEUED)
+  errorMessage String?
+  sentAt      DateTime?
+  createdAt   DateTime    @default(now())
+
+  booking     Booking?    @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@index([bookingId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("email_log")
+}
+
+// ---------------------------------------------------------------------------
+// AD Sync Log
+// ---------------------------------------------------------------------------
+
+model AdSyncLog {
+  id             Int      @id @default(autoincrement())
+  startedAt      DateTime @default(now())
+  completedAt    DateTime?
+  triggeredBy    String?  // "SCHEDULED" | "MANUAL"
+  usersAdded     Int      @default(0)
+  usersUpdated   Int      @default(0)
+  usersDeactivated Int    @default(0)
+  errorMessage   String?
+  success        Boolean  @default(false)
+
+  @@index([startedAt])
+  @@map("ad_sync_log")
+}

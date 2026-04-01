@@ -1,0 +1,242 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+
+<style>
+.calendar-grid {
+  display: grid;
+  grid-template-columns: 56px repeat(7, 1fr);
+  min-width: 900px;
+}
+.cal-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #fff;
+}
+.cal-time-col {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  text-align: right;
+  padding-right: 8px;
+  height: 60px;
+  line-height: 1;
+  padding-top: 4px;
+  border-right: 1px solid #e5e7eb;
+}
+.cal-day-col {
+  position: relative;
+  border-right: 1px solid #e5e7eb;
+  min-height: 60px;
+}
+.cal-hour-row {
+  height: 60px;
+  border-bottom: 1px dashed #e5e7eb;
+}
+.cal-hour-row.full {
+  border-bottom: 1px solid #e5e7eb;
+}
+.cal-event {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  border-radius: 4px;
+  padding: 2px 5px;
+  font-size: 0.72rem;
+  overflow: hidden;
+  cursor: pointer;
+  z-index: 1;
+  transition: opacity .15s;
+  line-height: 1.3;
+}
+.cal-event:hover { opacity: 0.85; }
+.cal-event.status-ACTIVE { background: #dbeafe; border-left: 3px solid #3b82f6; color: #1d4ed8; }
+.cal-event.status-CANCELLED { background: #fee2e2; border-left: 3px solid #ef4444; color: #b91c1c; text-decoration: line-through; }
+.cal-today-col { background: #fafff5; }
+.cal-now-line {
+  position: absolute;
+  left: 0; right: 0;
+  height: 2px;
+  background: #ef4444;
+  z-index: 3;
+  pointer-events: none;
+}
+.cal-now-line::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ef4444;
+}
+.calendar-wrapper {
+  overflow-x: auto;
+}
+.cal-day-header {
+  text-align: center;
+  padding: 8px 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-right: 1px solid #e5e7eb;
+  border-bottom: 2px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 2;
+}
+.cal-day-header.today {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.cal-day-header .date-num {
+  display: block;
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+</style>
+
+<main class="container-fluid py-3">
+  <!-- Toolbar -->
+  <div class="d-flex align-items-center flex-wrap gap-2 mb-3">
+    <h2 class="mb-0 me-auto"><i class="bi bi-calendar3 me-2"></i><%= t('bookings.calendar') %></h2>
+    <div class="btn-group btn-group-sm">
+      <a href="/bookings?date=<%= prevWeek %>" class="btn btn-outline-secondary">
+        <i class="bi bi-chevron-left"></i>
+      </a>
+      <a href="/bookings?date=<%= today %>" class="btn btn-outline-secondary">Today</a>
+      <a href="/bookings?date=<%= nextWeek %>" class="btn btn-outline-secondary">
+        <i class="bi bi-chevron-right"></i>
+      </a>
+    </div>
+    <span class="text-muted small fw-semibold">
+      <%
+        const ws = new Date(weekStart + 'T00:00:00');
+        const we = new Date(weekStart + 'T00:00:00');
+        we.setDate(we.getDate() + 6);
+      %>
+      <%= ws.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) %> –
+      <%= we.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) %>
+    </span>
+    <a href="/bookings/new" class="btn btn-sm btn-primary">
+      <i class="bi bi-plus-circle me-1"></i><%= t('bookings.newBooking') %>
+    </a>
+  </div>
+
+  <div class="calendar-wrapper border rounded shadow-sm bg-white">
+    <div class="calendar-grid">
+
+      <!-- Header row -->
+      <div class="cal-day-header border-bottom" style="border-right:1px solid #e5e7eb; background:#f9fafb;"></div>
+      <% days.forEach(d => { %>
+        <div class="cal-day-header <%= d.isToday ? 'today' : '' %>">
+          <span class="text-uppercase" style="font-size:0.65rem;letter-spacing:.05em;color:#6b7280;">
+            <%= d.label.split(' ')[0] %>
+          </span>
+          <span class="date-num"><%= d.label.split(' ')[1] %></span>
+          <span style="font-size:0.65rem;color:#9ca3af;"><%= d.label.split(' ').slice(2).join(' ') %></span>
+        </div>
+      <% }) %>
+
+      <!-- Time rows: 07:00 – 21:00 (15 hours) -->
+      <%
+        const START_HOUR = 7;
+        const END_HOUR = 21;
+        // Pre-group bookings by date
+        const byDate = {};
+        bookings.forEach(b => {
+          const key = b.date.toISOString ? b.date.toISOString().slice(0,10) : String(b.date).slice(0,10);
+          if (!byDate[key]) byDate[key] = [];
+          byDate[key].push(b);
+        });
+
+        function timeToMinutes(t) {
+          const [h,m] = t.split(':').map(Number);
+          return h * 60 + m;
+        }
+
+        const dayStartMin = START_HOUR * 60;
+        const totalMin = (END_HOUR - START_HOUR) * 60;
+      %>
+
+      <% for (let h = START_HOUR; h < END_HOUR; h++) { %>
+        <!-- Time label -->
+        <div class="cal-time-col"><%= String(h).padStart(2,'0') %>:00</div>
+
+        <!-- Day cells for this hour -->
+        <% days.forEach(d => { %>
+          <div class="cal-day-col <%= d.isToday ? 'cal-today-col' : '' %>">
+            <div class="cal-hour-row"></div>
+            <% if (h === START_HOUR) { %>
+              <!-- Render all bookings for this day as absolute-positioned blocks -->
+              <% const dayBookings = byDate[d.date] || []; %>
+              <% dayBookings.forEach(b => { %>
+                <%
+                  const startMin = timeToMinutes(b.startTime);
+                  const endMin = timeToMinutes(b.endTime);
+                  const topPct = ((startMin - dayStartMin) / totalMin * 100).toFixed(2);
+                  const heightPct = ((endMin - startMin) / totalMin * 100).toFixed(2);
+                %>
+                <a href="/bookings/<%= b.id %>" class="cal-event status-<%= b.status %> text-decoration-none"
+                   style="top:<%= topPct %>%;height:<%= heightPct %>%;min-height:16px;"
+                   title="<%= b.title || (b.room && b.room.name) || '' %> <%= b.startTime %>–<%= b.endTime %>">
+                  <strong class="d-block"><%= b.startTime %>–<%= b.endTime %></strong>
+                  <% if (b.room) { %><span><%= b.room.name %></span><% } %>
+                  <% if (b.title) { %><span class="d-block text-truncate"><%= b.title %></span><% } %>
+                  <% if (b.recurringSeriesId) { %><i class="bi bi-arrow-repeat" title="Recurring"></i><% } %>
+                </a>
+              <% }) %>
+              <!-- Today now-line (positioned via JS) -->
+              <% if (d.isToday) { %>
+                <div class="cal-now-line d-none" id="cal-now-line"></div>
+              <% } %>
+            <% } %>
+          </div>
+        <% }) %>
+      <% } %>
+
+    </div>
+  </div>
+</main>
+
+<script>
+  // Position the now-line for today
+  const nowLine = document.getElementById('cal-now-line');
+  if (nowLine) {
+    const START_HOUR = <%= START_HOUR %>;
+    const END_HOUR = <%= END_HOUR %>;
+    function updateNowLine() {
+      const now = new Date();
+      const totalMin = (END_HOUR - START_HOUR) * 60;
+      const elapsed = (now.getHours() - START_HOUR) * 60 + now.getMinutes();
+      if (elapsed >= 0 && elapsed <= totalMin) {
+        const pct = (elapsed / totalMin * 100).toFixed(2);
+        nowLine.style.top = pct + '%';
+        nowLine.classList.remove('d-none');
+      } else {
+        nowLine.classList.add('d-none');
+      }
+    }
+    updateNowLine();
+    setInterval(updateNowLine, 30000);
+  }
+
+  // Scroll to current time on load (weekday column)
+  window.addEventListener('DOMContentLoaded', () => {
+    const now = new Date();
+    const START_HOUR = <%= START_HOUR %>;
+    const END_HOUR = <%= END_HOUR %>;
+    const totalMin = (END_HOUR - START_HOUR) * 60;
+    const elapsed = (now.getHours() - START_HOUR) * 60 + now.getMinutes() - 60; // -60 to show 1hr before
+    if (elapsed > 0) {
+      const wrapper = document.querySelector('.calendar-wrapper');
+      if (wrapper) {
+        const gridH = wrapper.scrollHeight;
+        wrapper.scrollTop = (elapsed / totalMin) * gridH;
+      }
+    }
+  });
+</script>
+
+<%- include('../partials/footer') %>

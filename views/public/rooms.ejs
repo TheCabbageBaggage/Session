@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Room Overview – Today – Session</title>
+  <meta http-equiv="refresh" content="<%= refreshInterval || 60 %>">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="/css/app.css">
+
+  <style>
+    body { background: #111827; color: #f3f4f6; font-family: system-ui, sans-serif; }
+
+    .public-header {
+      background: #1e3a5f;
+      border-bottom: 2px solid #2563eb;
+      padding: .75rem 1.5rem;
+    }
+
+    .rooms-grid {
+      display: grid;
+      grid-template-columns: 64px repeat(var(--room-count, 4), 1fr);
+      gap: 0;
+      height: calc(100vh - 64px);
+      overflow: hidden;
+    }
+
+    .time-axis { background: #1f2937; border-right: 1px solid #374151; }
+    .time-label {
+      height: 60px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-end;
+      padding: .2rem .5rem 0 0;
+      font-size: .7rem;
+      color: #6b7280;
+      border-bottom: 1px solid #374151;
+    }
+
+    .room-col {
+      border-right: 1px solid #374151;
+      position: relative;
+      overflow: hidden;
+    }
+    .room-col:last-child { border-right: none; }
+
+    .room-header {
+      background: #1f2937;
+      border-bottom: 2px solid #374151;
+      padding: .5rem .75rem;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      height: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .room-header .room-name { font-weight: 700; font-size: .9rem; }
+    .room-header .room-meta { font-size: .7rem; color: #9ca3af; }
+
+    .hour-row {
+      height: 60px;
+      border-bottom: 1px solid #1f2937;
+    }
+    .hour-row.half { border-bottom-style: dashed; }
+
+    .booking-block {
+      position: absolute;
+      left: 3px;
+      right: 3px;
+      border-radius: 4px;
+      padding: 4px 6px;
+      font-size: .72rem;
+      overflow: hidden;
+      z-index: 2;
+      line-height: 1.3;
+    }
+    .booking-block.upcoming {
+      background: rgba(37, 99, 235, .25);
+      border-left: 3px solid #3b82f6;
+      color: #93c5fd;
+    }
+    .booking-block.current {
+      background: rgba(220, 38, 38, .3);
+      border-left: 3px solid #ef4444;
+      color: #fca5a5;
+      box-shadow: 0 0 8px rgba(239,68,68,.4);
+    }
+    .booking-block.past {
+      background: rgba(75, 85, 99, .2);
+      border-left: 3px solid #4b5563;
+      color: #6b7280;
+    }
+
+    /* Now-line */
+    .now-line {
+      position: absolute;
+      left: 0; right: 0;
+      height: 2px;
+      background: #ef4444;
+      z-index: 10;
+      pointer-events: none;
+      box-shadow: 0 0 6px rgba(239,68,68,.6);
+    }
+    .now-line::before {
+      content: '';
+      position: absolute;
+      left: -5px; top: -5px;
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+
+    /* Status indicator dot */
+    .room-status-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+    .room-status-dot.free { background: #22c55e; box-shadow: 0 0 4px rgba(34,197,94,.6); }
+    .room-status-dot.busy { background: #ef4444; box-shadow: 0 0 4px rgba(239,68,68,.6); }
+    .room-status-dot.upcoming { background: #f59e0b; }
+
+    .timeline-area {
+      overflow-y: auto;
+      height: calc(100vh - 124px); /* header + room header */
+    }
+    .timeline-inner {
+      position: relative;
+    }
+  </style>
+</head>
+<body>
+
+<header class="public-header d-flex align-items-center justify-content-between">
+  <div class="d-flex align-items-center">
+    <i class="bi bi-calendar2-check fs-4 me-2 text-primary"></i>
+    <span class="fw-bold fs-5">Session</span>
+    <span class="ms-3 text-secondary small">Room Overview</span>
+  </div>
+  <div class="d-flex align-items-center gap-3">
+    <span class="text-secondary small"><%= date %></span>
+    <span id="clock" class="fw-semibold fs-5"></span>
+    <span class="badge bg-secondary small">Auto-refresh <%= refreshInterval %>s</span>
+  </div>
+</header>
+
+<% if (rooms.length === 0) { %>
+  <div class="d-flex align-items-center justify-content-center" style="height:calc(100vh - 64px);">
+    <div class="text-center text-secondary">
+      <i class="bi bi-door-closed fs-1 d-block mb-3 opacity-50"></i>
+      <p class="fs-5">No rooms configured yet.</p>
+      <p class="small opacity-75">Add rooms in the admin panel to see them here.</p>
+    </div>
+  </div>
+<% } else { %>
+
+<%
+  const START_HOUR = 7;
+  const END_HOUR = 21;
+  const TOTAL_MIN = (END_HOUR - START_HOUR) * 60;
+  const PX_PER_MIN = 1; // 60px per hour = 1px per minute
+
+  function timeToMin(t) {
+    const [h,m] = t.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  function bookingStyle(startTime, endTime) {
+    const startMin = timeToMin(startTime);
+    const endMin = timeToMin(endTime);
+    const top = (startMin - START_HOUR * 60) * PX_PER_MIN;
+    const height = Math.max((endMin - startMin) * PX_PER_MIN, 20);
+    return `top:${top}px;height:${height}px;`;
+  }
+
+  const nowStr = new Date().toTimeString().slice(0,5);
+  const nowMin = timeToMin(nowStr);
+
+  function bookingClass(startTime, endTime) {
+    const s = timeToMin(startTime);
+    const e = timeToMin(endTime);
+    if (e <= nowMin) return 'past';
+    if (s <= nowMin && e > nowMin) return 'current';
+    return 'upcoming';
+  }
+
+  const totalHeight = TOTAL_MIN * PX_PER_MIN; // px
+%>
+
+<div class="rooms-grid" style="--room-count:<%= rooms.length %>;">
+  <!-- Time axis -->
+  <div class="time-axis" style="padding-top:60px;">
+    <div class="timeline-area" id="timeAxis">
+      <div class="timeline-inner" style="height:<%= totalHeight %>px;">
+        <% for (let h = START_HOUR; h < END_HOUR; h++) { %>
+          <div class="time-label" style="top:<%= (h - START_HOUR) * 60 * PX_PER_MIN %>px; position:absolute; width:100%;">
+            <%= String(h).padStart(2,'0') %>:00
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Room columns -->
+  <% rooms.forEach(room => { %>
+    <%
+      const roomBookings = bookingsByRoom[room.id] || [];
+      const currentBooking = roomBookings.find(b => timeToMin(b.startTime) <= nowMin && timeToMin(b.endTime) > nowMin);
+      const nextBooking = roomBookings.filter(b => timeToMin(b.startTime) > nowMin).sort((a,b) => a.startTime.localeCompare(b.startTime))[0];
+    %>
+    <div class="room-col d-flex flex-column">
+      <!-- Room header -->
+      <div class="room-header">
+        <div class="room-name">
+          <% if (currentBooking) { %>
+            <span class="room-status-dot busy"></span>
+          <% } else if (nextBooking) { %>
+            <span class="room-status-dot upcoming"></span>
+          <% } else { %>
+            <span class="room-status-dot free"></span>
+          <% } %>
+          <%= room.name %>
+        </div>
+        <div class="room-meta">
+          <i class="bi bi-people me-1"></i><%= room.capacity %>
+          <% if (room.location) { %>&bull; <%= room.location %><% } %>
+          <% if (room.type === 'HALL') { %>&bull; Hall<% } %>
+        </div>
+        <div class="room-meta mt-1">
+          <% if (currentBooking) { %>
+            <span class="text-danger">Occupied until <%= currentBooking.endTime %></span>
+          <% } else if (nextBooking) { %>
+            <span class="text-warning">Next: <%= nextBooking.startTime %></span>
+          <% } else { %>
+            <span class="text-success">Free today</span>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div class="timeline-area flex-grow-1 position-relative" id="timeline_<%= room.id %>">
+        <div class="timeline-inner" style="height:<%= totalHeight %>px; position:relative;">
+
+          <!-- Hour grid lines -->
+          <% for (let h = START_HOUR; h < END_HOUR; h++) { %>
+            <div style="position:absolute;left:0;right:0;top:<%= (h - START_HOUR) * 60 * PX_PER_MIN %>px;height:<%= 60 * PX_PER_MIN %>px;border-bottom:1px solid #1f2937;"></div>
+            <div style="position:absolute;left:0;right:0;top:<%= (h - START_HOUR) * 60 * PX_PER_MIN + 30 * PX_PER_MIN %>px;height:1px;background:#1f2937;opacity:.5;"></div>
+          <% } %>
+
+          <!-- Bookings -->
+          <% roomBookings.forEach(b => { %>
+            <div class="booking-block <%= bookingClass(b.startTime, b.endTime) %>"
+                 style="<%= bookingStyle(b.startTime, b.endTime) %>">
+              <strong class="d-block"><%= b.startTime %> – <%= b.endTime %></strong>
+              <span class="d-block text-truncate opacity-75">
+                <i class="bi bi-people me-1"></i><%= b.attendeeCount || '' %>
+              </span>
+            </div>
+          <% }) %>
+
+          <!-- Now line (only show in this column for visual anchor) -->
+          <div class="now-line" id="nowLine_<%= room.id %>" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+  <% }) %>
+</div>
+
+<script>
+  const START_HOUR = <%= START_HOUR %>;
+  const END_HOUR = <%= END_HOUR %>;
+  const TOTAL_MIN = (END_HOUR - START_HOUR) * 60;
+  const PX_PER_MIN = 1;
+
+  // Live clock
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').textContent = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Position now-lines
+  function updateNowLines() {
+    const now = new Date();
+    const elapsed = (now.getHours() - START_HOUR) * 60 + now.getMinutes();
+    const top = elapsed * PX_PER_MIN;
+
+    document.querySelectorAll('[id^="nowLine_"]').forEach(line => {
+      if (elapsed >= 0 && elapsed <= TOTAL_MIN) {
+        line.style.top = top + 'px';
+        line.style.display = 'block';
+      } else {
+        line.style.display = 'none';
+      }
+    });
+  }
+  updateNowLines();
+  setInterval(updateNowLines, 30000);
+
+  // Scroll all timeline areas to current time on load
+  window.addEventListener('DOMContentLoaded', () => {
+    const now = new Date();
+    const elapsed = (now.getHours() - START_HOUR) * 60 + now.getMinutes();
+    const scrollTop = Math.max(0, elapsed * (60 / 60) - 120); // 2 hours back
+
+    document.querySelectorAll('.timeline-area').forEach(el => {
+      el.scrollTop = scrollTop;
+    });
+  });
+
+  // Sync scroll across all timeline columns
+  let syncScrolling = false;
+  document.querySelectorAll('.timeline-area').forEach(el => {
+    el.addEventListener('scroll', () => {
+      if (syncScrolling) return;
+      syncScrolling = true;
+      document.querySelectorAll('.timeline-area').forEach(other => {
+        if (other !== el) other.scrollTop = el.scrollTop;
+      });
+      syncScrolling = false;
+    });
+  });
+</script>
+
+<% } %>
+
+</body>
+</html>

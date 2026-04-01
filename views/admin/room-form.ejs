@@ -1,0 +1,220 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+
+<main class="container py-4">
+  <div class="row mb-3 align-items-center">
+    <div class="col">
+      <h2 class="mb-0">
+        <i class="bi bi-<%= room ? 'pencil' : 'plus-circle' %> me-2"></i><%= title %>
+      </h2>
+    </div>
+    <div class="col-auto">
+      <a href="/admin/rooms" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i><%= t('common.back') %>
+      </a>
+    </div>
+  </div>
+
+  <% if (error) { %>
+    <div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-1"></i><%= error %></div>
+  <% } %>
+
+  <form method="POST" action="/admin/rooms/<%= room ? room.id + '/edit' : 'new' %>" enctype="multipart/form-data">
+    <div class="row g-4">
+
+      <!-- Left column: main fields -->
+      <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-white border-bottom">
+            <strong><%= t('admin.roomDetails') %></strong>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="name"><%= t('admin.roomName') %> <span class="text-danger">*</span></label>
+              <input type="text" id="name" name="name" class="form-control"
+                     value="<%= room ? room.name : '' %>" required maxlength="100">
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="description"><%= t('admin.description') %></label>
+              <textarea id="description" name="description" class="form-control" rows="2"
+                        maxlength="500"><%= room ? room.description || '' : '' %></textarea>
+            </div>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" for="location"><%= t('admin.location') %></label>
+                <input type="text" id="location" name="location" class="form-control"
+                       value="<%= room ? room.location || '' : '' %>" maxlength="100">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold" for="capacity"><%= t('admin.capacity') %> <span class="text-danger">*</span></label>
+                <input type="number" id="capacity" name="capacity" class="form-control"
+                       value="<%= room ? room.capacity : '' %>" min="1" max="9999" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold" for="type"><%= t('admin.roomType') %> <span class="text-danger">*</span></label>
+                <select id="type" name="type" class="form-select" id="roomTypeSelect">
+                  <option value="MEETING_ROOM" <%= (!room || room.type === 'MEETING_ROOM') ? 'selected' : '' %>>Meeting Room</option>
+                  <option value="HALL" <%= (room && room.type === 'HALL') ? 'selected' : '' %>>Hall</option>
+                </select>
+              </div>
+            </div>
+            <div class="mb-0 mt-3">
+              <label class="form-label fw-semibold" for="exchangeMailbox"><%= t('admin.exchangeMailbox') %></label>
+              <input type="email" id="exchangeMailbox" name="exchangeMailbox" class="form-control"
+                     value="<%= room ? room.exchangeMailbox || '' : '' %>" maxlength="200"
+                     placeholder="room@company.com">
+              <div class="form-text"><%= t('admin.exchangeMailboxHint') %></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Catering options -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between">
+            <strong><%= t('admin.cateringOptions') %></strong>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="addCatering">
+              <i class="bi bi-plus"></i> <%= t('common.add') %>
+            </button>
+          </div>
+          <div class="card-body">
+            <div id="cateringList">
+              <% const existingCatering = room && room.cateringOptions ? room.cateringOptions.map(c => c.cateringOption) : []; %>
+              <% if (existingCatering.length === 0) { %>
+                <div class="catering-item d-flex gap-2 mb-2">
+                  <input type="text" name="cateringOptions" class="form-control form-control-sm"
+                         placeholder="e.g. Coffee, Water, Pastries">
+                  <button type="button" class="btn btn-sm btn-outline-danger remove-catering">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              <% } else { %>
+                <% existingCatering.forEach(opt => { %>
+                  <div class="catering-item d-flex gap-2 mb-2">
+                    <input type="text" name="cateringOptions" class="form-control form-control-sm"
+                           value="<%= opt %>" placeholder="e.g. Coffee, Water, Pastries">
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-catering">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                <% }) %>
+              <% } %>
+            </div>
+            <div class="form-text"><%= t('admin.cateringHint') %></div>
+          </div>
+        </div>
+
+        <!-- Seating layouts (for halls) -->
+        <div class="card border-0 shadow-sm mb-4" id="seatingCard">
+          <div class="card-header bg-white border-bottom">
+            <strong><%= t('admin.seatingLayouts') %></strong>
+          </div>
+          <div class="card-body">
+            <% if (layouts.length === 0) { %>
+              <p class="text-muted mb-0">
+                <%= t('admin.noSeatingLayouts') %>
+                <a href="/admin/seating-layouts"  class="ms-1"><%= t('admin.manageSeatingLayouts') %></a>
+              </p>
+            <% } else { %>
+              <% const roomLayoutIds = room && room.seatingLayouts ? room.seatingLayouts.map(sl => sl.seatingLayoutId) : []; %>
+              <div class="row g-2">
+                <% layouts.forEach(layout => { %>
+                  <div class="col-md-6">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" name="seatingLayoutIds"
+                             value="<%= layout.id %>" id="layout_<%= layout.id %>"
+                             <%= roomLayoutIds.includes(layout.id) ? 'checked' : '' %>>
+                      <label class="form-check-label" for="layout_<%= layout.id %>">
+                        <%= layout.name %>
+                        <% if (layout.description) { %>
+                          <small class="text-muted d-block"><%= layout.description %></small>
+                        <% } %>
+                      </label>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right column: image + status -->
+      <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-white border-bottom">
+            <strong><%= t('admin.roomImage') %></strong>
+          </div>
+          <div class="card-body text-center">
+            <% if (room && room.imagePath) { %>
+              <img src="<%= room.imagePath %>" alt="<%= room.name %>"
+                   class="img-thumbnail mb-3 w-100" style="max-height:160px;object-fit:cover;">
+            <% } else { %>
+              <div class="bg-light rounded d-flex align-items-center justify-content-center mb-3"
+                   style="height:120px;">
+                <i class="bi bi-image fs-1 text-muted"></i>
+              </div>
+            <% } %>
+            <input type="file" name="image" class="form-control form-control-sm" accept="image/*">
+            <div class="form-text"><%= t('admin.imageHint') %></div>
+          </div>
+        </div>
+
+        <% if (room) { %>
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-bottom">
+              <strong><%= t('admin.roomStatus') %></strong>
+            </div>
+            <div class="card-body">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="isActive" name="isActive"
+                       value="true" <%= room.isActive !== false ? 'checked' : '' %>>
+                <label class="form-check-label" for="isActive"><%= t('admin.activeRoom') %></label>
+              </div>
+              <!-- Hidden fallback for unchecked state -->
+              <input type="hidden" name="isActive" value="false" id="isActiveHidden">
+            </div>
+          </div>
+        <% } %>
+
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1"></i><%= t('common.save') %>
+          </button>
+          <a href="/admin/rooms" class="btn btn-outline-secondary">
+            <i class="bi bi-x me-1"></i><%= t('common.cancel') %>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </form>
+</main>
+
+<script>
+  // Checkbox/hidden field logic for isActive toggle
+  const cb = document.getElementById('isActive');
+  const hidden = document.getElementById('isActiveHidden');
+  if (cb && hidden) {
+    cb.addEventListener('change', () => {
+      hidden.disabled = cb.checked;
+    });
+    hidden.disabled = cb.checked;
+  }
+
+  // Add catering option row
+  document.getElementById('addCatering').addEventListener('click', () => {
+    const list = document.getElementById('cateringList');
+    const div = document.createElement('div');
+    div.className = 'catering-item d-flex gap-2 mb-2';
+    div.innerHTML = '<input type="text" name="cateringOptions" class="form-control form-control-sm" placeholder="e.g. Coffee, Water, Pastries">' +
+      '<button type="button" class="btn btn-sm btn-outline-danger remove-catering"><i class="bi bi-trash"></i></button>';
+    list.appendChild(div);
+  });
+
+  document.getElementById('cateringList').addEventListener('click', (e) => {
+    const btn = e.target.closest('.remove-catering');
+    if (btn) btn.closest('.catering-item').remove();
+  });
+</script>
+
+<%- include('../partials/footer') %>

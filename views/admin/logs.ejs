@@ -1,0 +1,282 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+
+<main class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col">
+      <h2><i class="bi bi-journal-text me-2"></i><%= t('admin.logs') %></h2>
+    </div>
+  </div>
+
+  <% if (typeof notice !== 'undefined' && notice) { %>
+    <div class="alert alert-success alert-dismissible fade show">
+      <i class="bi bi-check-circle-fill me-2"></i><%= notice %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-danger alert-dismissible fade show">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i><%= error %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <!-- Tab navigation -->
+  <ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+      <a class="nav-link <%= tab === 'audit' ? 'active' : '' %>" href="/admin/logs/audit">
+        <i class="bi bi-journal-check me-1"></i><%= t('admin.auditLog') %>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link <%= tab === 'ad' ? 'active' : '' %>" href="/admin/logs/ad">
+        <i class="bi bi-people-fill me-1"></i><%= t('admin.adSyncLog') %>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link <%= tab === 'email' ? 'active' : '' %>" href="/admin/logs/email">
+        <i class="bi bi-envelope me-1"></i><%= t('admin.emailLog') %>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link <%= tab === 'exchange' ? 'active' : '' %>" href="/admin/logs/exchange">
+        <i class="bi bi-cloud-arrow-up me-1"></i><%= t('admin.exchangeSyncLog') %>
+      </a>
+    </li>
+  </ul>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+
+      <% if (tab === 'audit') { %>
+        <!-- Audit log table -->
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th><%= t('admin.timestamp') %></th>
+                <th><%= t('admin.user') %></th>
+                <th><%= t('admin.action') %></th>
+                <th><%= t('admin.entity') %></th>
+                <th><%= t('admin.ipAddress') %></th>
+                <th><%= t('admin.details') %></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (logs.length === 0) { %>
+                <tr><td colspan="6" class="text-center text-muted py-4"><%= t('admin.noLogs') %></td></tr>
+              <% } %>
+              <% logs.forEach(log => { %>
+                <tr>
+                  <td class="text-nowrap small"><%= log.createdAt.toLocaleString() %></td>
+                  <td class="small">
+                    <% if (log.user) { %>
+                      <a href="/admin/users/<%= log.userId %>/edit">
+                        <%= log.user.username %>
+                      </a>
+                    <% } else { %>
+                      <span class="text-muted">system</span>
+                    <% } %>
+                  </td>
+                  <td><span class="badge bg-light text-dark border"><%= log.action %></span></td>
+                  <td class="small text-muted"><%= log.entityType %> <%= log.entityId ? '#' + log.entityId : '' %></td>
+                  <td class="small text-muted"><%= log.ipAddress || '–' %></td>
+                  <td class="small text-muted text-truncate" style="max-width:200px" title="<%= log.details || '' %>">
+                    <%= log.details || '' %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+
+      <% } else if (tab === 'ad') { %>
+        <!-- AD sync log table -->
+        <div class="d-flex justify-content-between align-items-center px-3 pt-3 pb-2">
+          <span class="text-muted small"><%= total %> <%= t('admin.entries') %></span>
+          <form action="/admin/sync/ad" method="POST">
+            <button type="submit" class="btn btn-primary btn-sm">
+              <i class="bi bi-arrow-repeat me-1"></i><%= t('admin.runAdSync') %>
+            </button>
+          </form>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th><%= t('admin.startedAt') %></th>
+                <th><%= t('admin.duration') %></th>
+                <th><%= t('admin.status') %></th>
+                <th><%= t('admin.added') %></th>
+                <th><%= t('admin.updated') %></th>
+                <th><%= t('admin.deactivated') %></th>
+                <th><%= t('admin.error') %></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (logs.length === 0) { %>
+                <tr><td colspan="7" class="text-center text-muted py-4"><%= t('admin.noLogs') %></td></tr>
+              <% } %>
+              <% logs.forEach(log => { %>
+                <tr>
+                  <td class="small text-nowrap"><%= log.startedAt.toLocaleString() %></td>
+                  <td class="small text-muted">
+                    <% if (log.completedAt) { %>
+                      <%= Math.round((log.completedAt - log.startedAt) / 1000) %>s
+                    <% } else { %>–<% } %>
+                  </td>
+                  <td>
+                    <span class="badge <%= log.success ? 'bg-success' : 'bg-danger' %>">
+                      <%= log.success ? t('common.success') : t('common.failed') %>
+                    </span>
+                  </td>
+                  <td class="text-success fw-semibold"><%= log.usersAdded %></td>
+                  <td class="text-primary fw-semibold"><%= log.usersUpdated %></td>
+                  <td class="text-warning fw-semibold"><%= log.usersDeactivated %></td>
+                  <td class="small text-danger text-truncate" style="max-width:250px" title="<%= log.errorMessage || '' %>">
+                    <%= log.errorMessage || '' %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+
+      <% } else if (tab === 'email') { %>
+        <!-- Email log table -->
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th><%= t('admin.timestamp') %></th>
+                <th><%= t('admin.recipient') %></th>
+                <th><%= t('admin.subject') %></th>
+                <th><%= t('admin.type') %></th>
+                <th><%= t('admin.status') %></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (logs.length === 0) { %>
+                <tr><td colspan="5" class="text-center text-muted py-4"><%= t('admin.noLogs') %></td></tr>
+              <% } %>
+              <% logs.forEach(log => { %>
+                <tr>
+                  <td class="small text-nowrap"><%= log.createdAt.toLocaleString() %></td>
+                  <td class="small"><%= log.recipient %></td>
+                  <td class="small text-truncate" style="max-width:250px"><%= log.subject %></td>
+                  <td class="small"><%= log.type %></td>
+                  <td>
+                    <span class="badge <%= log.status === 'SENT' ? 'bg-success' : log.status === 'QUEUED' ? 'bg-warning text-dark' : 'bg-danger' %>">
+                      <%= log.status %>
+                    </span>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } else if (tab === 'exchange') { %>
+        <!-- Exchange sync log table -->
+        <div class="d-flex justify-content-between align-items-center px-3 pt-3 pb-2 flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small"><%= total %> <%= t('admin.entries') %></span>
+            <% if (typeof exchangeEnabled !== 'undefined' && !exchangeEnabled) { %>
+              <span class="badge bg-secondary">Exchange integration disabled</span>
+            <% } %>
+          </div>
+          <div class="d-flex gap-2">
+            <form action="/admin/exchange/retry-all" method="POST" class="d-inline">
+              <button type="submit" class="btn btn-outline-warning btn-sm">
+                <i class="bi bi-arrow-repeat me-1"></i><%= t('admin.retryAllFailed') %>
+              </button>
+            </form>
+          </div>
+        </div>
+        <!-- Status filter -->
+        <div class="px-3 pb-2">
+          <div class="btn-group btn-group-sm">
+            <a href="/admin/logs/exchange" class="btn <%= !filterStatus ? 'btn-secondary' : 'btn-outline-secondary' %>">All</a>
+            <a href="/admin/logs/exchange?status=FAILED" class="btn <%= filterStatus === 'FAILED' ? 'btn-danger' : 'btn-outline-secondary' %>">Failed</a>
+            <a href="/admin/logs/exchange?status=SUCCESS" class="btn <%= filterStatus === 'SUCCESS' ? 'btn-success' : 'btn-outline-secondary' %>">Success</a>
+            <a href="/admin/logs/exchange?status=PENDING" class="btn <%= filterStatus === 'PENDING' ? 'btn-primary' : 'btn-outline-secondary' %>">Pending</a>
+            <a href="/admin/logs/exchange?status=RETRY" class="btn <%= filterStatus === 'RETRY' ? 'btn-warning' : 'btn-outline-secondary' %>">Retry</a>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th><%= t('admin.timestamp') %></th>
+                <th><%= t('admin.bookingId') %></th>
+                <th>Room</th>
+                <th><%= t('admin.operation') %></th>
+                <th><%= t('admin.status') %></th>
+                <th>Attempts</th>
+                <th><%= t('admin.error') %></th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (logs.length === 0) { %>
+                <tr><td colspan="8" class="text-center text-muted py-4"><%= t('admin.noLogs') %></td></tr>
+              <% } %>
+              <% logs.forEach(log => { %>
+                <tr>
+                  <td class="small text-nowrap"><%= log.createdAt.toLocaleString() %></td>
+                  <td class="small">
+                    <% if (log.booking) { %>
+                      <a href="/bookings/<%= log.bookingId %>">#<%= log.bookingId %></a>
+                    <% } else { %>#<%= log.bookingId %><% } %>
+                  </td>
+                  <td class="small text-muted"><%= log.booking && log.booking.room ? log.booking.room.name : '–' %></td>
+                  <td><span class="badge bg-light text-dark border"><%= log.operation %></span></td>
+                  <td>
+                    <span class="badge <%= log.status === 'SUCCESS' ? 'bg-success' : log.status === 'FAILED' ? 'bg-danger' : log.status === 'RETRY' ? 'bg-warning text-dark' : 'bg-secondary' %>">
+                      <%= log.status %>
+                    </span>
+                  </td>
+                  <td class="text-center small"><%= log.attempts %></td>
+                  <td class="small text-danger text-truncate" style="max-width:220px" title="<%= log.errorMessage || '' %>">
+                    <%= log.errorMessage || '' %>
+                  </td>
+                  <td>
+                    <% if (log.status === 'FAILED') { %>
+                      <form action="/admin/exchange/retry/<%= log.id %>" method="POST" class="d-inline">
+                        <button type="submit" class="btn btn-xs btn-outline-warning py-0 px-1" style="font-size:.7rem">
+                          <i class="bi bi-arrow-repeat"></i> Retry
+                        </button>
+                      </form>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+
+    </div>
+
+    <!-- Pagination -->
+    <% if (totalPages > 1) { %>
+      <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+        <span class="text-muted small">
+          <%= t('common.showing') %> <%= (page-1)*pageSize + 1 %>–<%= Math.min(page*pageSize, total) %>
+          <%= t('common.of') %> <%= total %>
+        </span>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <% for (let p = 1; p <= totalPages; p++) { %>
+              <li class="page-item <%= p === page ? 'active' : '' %>">
+                <a class="page-link" href="?page=<%= p %>"><%= p %></a>
+              </li>
+            <% } %>
+          </ul>
+        </nav>
+      </div>
+    <% } %>
+  </div>
+
+</main>
+
+<%- include('../partials/footer') %>

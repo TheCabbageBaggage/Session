@@ -1,0 +1,16 @@
+node_modules
+.git
+.gitignore
+*.log
+logs/
+coverage/
+.env
+.env.*
+!.env.example
+config/*.config.json
+!config/*.config.example.json
+tests/
+.github/
+docker-compose*.yml
+nginx/
+*.md

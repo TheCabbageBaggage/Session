@@ -1,0 +1,167 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+
+<main class="container py-4">
+  <div class="row mb-4 align-items-center">
+    <div class="col">
+      <h2 class="mb-0"><i class="bi bi-building me-2"></i><%= t('admin.companies') %></h2>
+    </div>
+    <div class="col-auto">
+      <a href="/admin/rooms" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i><%= t('admin.rooms') %>
+      </a>
+    </div>
+  </div>
+
+  <% if (success) { %>
+    <div class="alert alert-success alert-dismissible fade show">
+      <i class="bi bi-check-circle me-1"></i><%= t('admin.companySaved') %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+  <% if (error) { %>
+    <div class="alert alert-danger alert-dismissible fade show">
+      <i class="bi bi-exclamation-triangle me-1"></i><%= error %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <div class="row g-4">
+    <!-- List -->
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <% if (companies.length === 0) { %>
+          <div class="card-body text-center py-5 text-muted">
+            <i class="bi bi-building fs-1 d-block mb-2"></i>
+            <p class="mb-0"><%= t('admin.noCompanies') %></p>
+          </div>
+        <% } else { %>
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th><%= t('admin.companyName') %></th>
+                  <th><%= t('common.status') %></th>
+                  <th><%= t('admin.default') %></th>
+                  <th class="text-end"><%= t('common.actions') %></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% companies.forEach(company => { %>
+                  <tr>
+                    <td><strong><%= company.name %></strong></td>
+                    <td>
+                      <% if (company.isActive) { %>
+                        <span class="badge bg-success-subtle text-success"><%= t('common.active') %></span>
+                      <% } else { %>
+                        <span class="badge bg-secondary-subtle text-secondary"><%= t('common.inactive') %></span>
+                      <% } %>
+                    </td>
+                    <td>
+                      <% if (company.isDefault) { %>
+                        <span class="badge bg-primary-subtle text-primary"><i class="bi bi-star-fill me-1"></i><%= t('admin.default') %></span>
+                      <% } %>
+                    </td>
+                    <td class="text-end">
+                      <button type="button" class="btn btn-sm btn-outline-secondary"
+                              data-bs-toggle="modal" data-bs-target="#editCompanyModal"
+                              data-id="<%= company.id %>"
+                              data-name="<%= company.name %>"
+                              data-default="<%= company.isDefault %>"
+                              data-active="<%= company.isActive %>">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <form method="POST" action="/admin/companies/<%= company.id %>/delete" class="d-inline"
+                            onsubmit="return confirm('<%= t('admin.confirmDeleteCompany') %>')">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Add form -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <strong><%= t('admin.addCompany') %></strong>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="/admin/companies/new">
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="newCompanyName"><%= t('admin.companyName') %> <span class="text-danger">*</span></label>
+              <input type="text" id="newCompanyName" name="name" class="form-control" required maxlength="100">
+            </div>
+            <div class="mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="newIsDefault" name="isDefault" value="on">
+                <label class="form-check-label" for="newIsDefault"><%= t('admin.setAsDefault') %></label>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="bi bi-plus-circle me-1"></i><%= t('admin.addCompany') %>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Edit company modal -->
+<div class="modal fade" id="editCompanyModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" id="editCompanyForm" action="">
+        <div class="modal-header">
+          <h5 class="modal-title"><%= t('admin.editCompany') %></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold"><%= t('admin.companyName') %> <span class="text-danger">*</span></label>
+            <input type="text" name="name" id="editCompanyName" class="form-control" required maxlength="100">
+          </div>
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="editIsDefault" name="isDefault" value="on">
+            <label class="form-check-label" for="editIsDefault"><%= t('admin.setAsDefault') %></label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="editIsActive" name="isActive" value="true">
+            <input type="hidden" name="isActive" value="false" id="editIsActiveHidden">
+            <label class="form-check-label" for="editIsActive"><%= t('admin.activeCompany') %></label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><%= t('common.cancel') %></button>
+          <button type="submit" class="btn btn-primary"><%= t('common.save') %></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  const editModal = document.getElementById('editCompanyModal');
+  editModal.addEventListener('show.bs.modal', (e) => {
+    const btn = e.relatedTarget;
+    document.getElementById('editCompanyForm').action = `/admin/companies/${btn.dataset.id}/edit`;
+    document.getElementById('editCompanyName').value = btn.dataset.name;
+    document.getElementById('editIsDefault').checked = btn.dataset.default === 'true';
+    const activeCb = document.getElementById('editIsActive');
+    activeCb.checked = btn.dataset.active === 'true';
+    document.getElementById('editIsActiveHidden').disabled = activeCb.checked;
+  });
+  document.getElementById('editIsActive').addEventListener('change', (e) => {
+    document.getElementById('editIsActiveHidden').disabled = e.target.checked;
+  });
+</script>
+
+<%- include('../partials/footer') %>
