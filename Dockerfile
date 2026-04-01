@@ -10,9 +10,8 @@ WORKDIR /app
 
 COPY package*.json ./
 
-# Install ALL deps (including devDependencies so prisma CLI is available)
-# Increase fetch retries for flaky networks
-RUN npm ci --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
+# --ignore-scripts skips Prisma's postinstall download; we run generate explicitly below
+RUN npm ci --ignore-scripts
 
 COPY prisma ./prisma/
 
@@ -20,7 +19,7 @@ COPY prisma ./prisma/
 RUN npx prisma generate
 
 # Remove dev dependencies so runtime image stays lean
-RUN npm prune --omit=dev
+RUN npm prune --omit=dev --ignore-scripts
 
 # ---- Runtime stage ----
 FROM node:20-alpine AS runtime
