@@ -55,3 +55,23 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD wget -qO- http://localhost:3000/api/health || exit 1
 
 CMD ["node", "src/server.js"]
+
+# ---- Migrate stage (Debian-based – avoids Alpine/musl schema-engine issues) ----
+FROM node:20-slim AS migrate
+
+RUN apt-get update -qq && \
+    apt-get install -y --no-install-recommends openssl && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --ignore-scripts
+
+COPY prisma ./prisma/
+RUN npx prisma generate
+
+COPY src/db ./src/db
+COPY prisma/seed.js ./prisma/seed.js
+
+CMD ["sh", "-c", "npx prisma migrate deploy && node prisma/seed.js"]

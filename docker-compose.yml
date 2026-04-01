@@ -46,7 +46,7 @@ services:
   migrate:
     build:
       context: .
-      target: runtime
+      target: migrate
     container_name: session-migrate
     command: sh -c "npx prisma migrate deploy && node prisma/seed.js"
     environment:
