@@ -9,10 +9,18 @@ RUN apk add --no-cache openssl
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --omit=dev
+
+# Install ALL deps (including devDependencies so prisma CLI is available)
+# Increase fetch retries for flaky networks
+RUN npm ci --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
 
 COPY prisma ./prisma/
+
+# Generate Prisma client with correct Alpine/OpenSSL 3 binary
 RUN npx prisma generate
+
+# Remove dev dependencies so runtime image stays lean
+RUN npm prune --omit=dev
 
 # ---- Runtime stage ----
 FROM node:20-alpine AS runtime
@@ -22,7 +30,7 @@ RUN apk add --no-cache openssl && \
 
 WORKDIR /app
 
-# Copy dependencies and generated Prisma client
+# Copy pruned production node_modules and generated Prisma client
 COPY --from=build /app/node_modules ./node_modules
 
 # Copy application source
@@ -33,7 +41,7 @@ COPY locales ./locales
 COPY prisma ./prisma
 COPY package.json ./
 
-# Create directories
+# Create writable directories and fix ownership
 RUN mkdir -p logs config public/uploads \
     && chown -R session:session /app
 
