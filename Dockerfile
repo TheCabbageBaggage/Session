@@ -11,12 +11,31 @@ WORKDIR /app
 COPY package*.json ./
 
 # --ignore-scripts skips Prisma's postinstall download; we run generate explicitly below
-RUN npm ci --ignore-scripts
+# Retry npm install to reduce flaky build failures from transient registry/network issues.
+RUN set -eux; \
+    for i in 1 2 3 4 5; do \
+      npm ci --ignore-scripts && break; \
+      if [ "$i" -eq 5 ]; then \
+        echo "npm ci failed after $i attempts"; \
+        exit 1; \
+      fi; \
+      echo "npm ci failed (attempt $i), retrying..."; \
+      sleep $((i * 5)); \
+    done
 
 COPY prisma ./prisma/
 
 # Generate Prisma client with correct Alpine/OpenSSL 3 binary
-RUN npx prisma generate
+RUN set -eux; \
+    for i in 1 2 3 4 5; do \
+      npx prisma generate && break; \
+      if [ "$i" -eq 5 ]; then \
+        echo "prisma generate failed after $i attempts"; \
+        exit 1; \
+      fi; \
+      echo "prisma generate failed (attempt $i), retrying..."; \
+      sleep $((i * 5)); \
+    done
 
 # Remove dev dependencies so runtime image stays lean
 RUN npm prune --omit=dev --ignore-scripts
@@ -60,16 +79,39 @@ CMD ["node", "src/server.js"]
 FROM node:20-slim AS migrate
 
 RUN apt-get update -qq && \
-    apt-get install -y --no-install-recommends openssl && \
+    apt-get install -y --no-install-recommends openssl ca-certificates libssl3 && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
+# Force Prisma to use Debian/OpenSSL 3 engines in this stage.
+ENV PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x
+ENV PRISMA_SCHEMA_ENGINE_BINARY=/app/node_modules/@prisma/engines/schema-engine-debian-openssl-3.0.x
+ENV PRISMA_QUERY_ENGINE_LIBRARY=/app/node_modules/@prisma/engines/libquery_engine-debian-openssl-3.0.x.so.node
+
 COPY package*.json ./
-RUN npm ci --ignore-scripts
+RUN set -eux; \
+    for i in 1 2 3 4 5; do \
+      npm ci --ignore-scripts && break; \
+      if [ "$i" -eq 5 ]; then \
+        echo "npm ci failed after $i attempts"; \
+        exit 1; \
+      fi; \
+      echo "npm ci failed (attempt $i), retrying..."; \
+      sleep $((i * 5)); \
+    done
 
 COPY prisma ./prisma/
-RUN npx prisma generate
+RUN set -eux; \
+    for i in 1 2 3 4 5; do \
+      npx prisma generate && break; \
+      if [ "$i" -eq 5 ]; then \
+        echo "prisma generate failed after $i attempts"; \
+        exit 1; \
+      fi; \
+      echo "prisma generate failed (attempt $i), retrying..."; \
+      sleep $((i * 5)); \
+    done
 
 COPY src/db ./src/db
 COPY prisma/seed.js ./prisma/seed.js
