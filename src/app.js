@@ -101,14 +101,14 @@ app.use('/api/rooms',    roomsApiRouter);
 app.use('/api/bookings', bookingsApiRouter);
 app.use('/api', apiLimiter);
 
-app.use('/login',    loginLimiter, authRouter);
-app.use('/logout',   authRouter);
+app.use('/login',    loginLimiter);  // rate-limit login attempts
 app.use('/public',   publicRouter);
 app.use('/profile',  profileRouter);
 app.use('/bookings',       bookingsRouter);
 app.use('/admin/reports',  reportsRouter);
 app.use('/admin',          adminRouter);
-app.use('/',               indexRouter);
+app.use('/',         authRouter);    // handles /login, /logout, /change-password
+app.use('/',         indexRouter);
 
 // ---------------------------------------------------------------------------
 // Error handling
